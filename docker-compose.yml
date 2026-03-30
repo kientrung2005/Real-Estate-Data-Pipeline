@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: real_estate_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: real_estate_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - real_estate_network
+
+  airflow-webserver:
+    image: apache/airflow:2.9.3-python3.12
+    container_name: real_estate_airflow_webserver
+    depends_on:
+      - postgres
+    environment:
+      #Kết nối về CÙNG database real_estate_db
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://postgres:admin123@postgres:5432/real_estate_db
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW_HOME: /opt/airflow
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./config:/opt/airflow/config
+    networks:
+      - real_estate_network
+    # Tự động init database + tạo user admin lần đầu chạy
+    command: bash -c "airflow db init && airflow users create --username admin --password admin123 --firstname Admin --lastname User --role Admin --email admin@airflow.local 2>/dev/null || true && airflow webserver"
+
+  #Thêm Airflow Scheduler
+  airflow-scheduler:
+    image: apache/airflow:2.9.3-python3.12
+    container_name: real_estate_airflow_scheduler
+    depends_on:
+      - postgres
+      - airflow-webserver
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://postgres:admin123@postgres:5432/real_estate_db
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW_HOME: /opt/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./config:/opt/airflow/config
+    networks:
+      - real_estate_network
+    command: airflow scheduler
+
+  adminer:
+    image: adminer:latest
+    container_name: real_estate_adminer
+    depends_on:
+      - postgres
+    ports:
+      - "8081:8080"
+    networks:
+      - real_estate_network
+
+  mongodb:
+    image: mongo:latest
+    container_name: real_estate_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - real_estate_network
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: real_estate_mongo_express
+    depends_on:
+      - mongodb
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password123@mongodb:27017/
+    networks:
+      - real_estate_network
+
+volumes:
+  postgres_data:
+  mongo_data:
+
+networks:
+  real_estate_network:
+    driver: bridge
