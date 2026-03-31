@@ -1,1 +1,0 @@
-"""SQL scripts package placeholder."""
