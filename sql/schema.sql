@@ -48,16 +48,20 @@ CREATE TABLE IF NOT EXISTS dim_district (
 );
 
 -- 1.4. Bảng phường/xã (Nguồn: Danh mục hành chính chi tiết)
--- Mỗi phường/xã thuộc đúng một quận/huyện
 CREATE TABLE IF NOT EXISTS dim_ward (
     ward_id SERIAL PRIMARY KEY,
-    district_id SMALLINT NOT NULL REFERENCES dim_district(district_id),
+    city_name VARCHAR(100) NOT NULL DEFAULT 'Ha Noi',
+    district_id SMALLINT,
     ward_name VARCHAR(120) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_dim_ward UNIQUE (district_id, ward_name)
+    CONSTRAINT uq_dim_ward UNIQUE (district_id, ward_name),
+    CONSTRAINT fk_dim_ward_district FOREIGN KEY (district_id)
+        REFERENCES dim_district(district_id)
+        ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_dim_ward_district ON dim_ward(district_id);
+CREATE INDEX IF NOT EXISTS idx_dim_ward_city ON dim_ward(city_name);
 
 -- 1.5. Bảng thời gian (Date Dimension)
 -- Dùng cho phân tích theo ngày/tháng/quý/năm
@@ -108,7 +112,7 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     listing_id BIGSERIAL PRIMARY KEY,
     run_id UUID REFERENCES etl_run_log(run_id),
     source_id SMALLINT NOT NULL REFERENCES dim_source(source_id),
-    district_id SMALLINT REFERENCES dim_district(district_id),
+    district_id SMALLINT,
     ward_id INT REFERENCES dim_ward(ward_id),
     type_id SMALLINT REFERENCES dim_property_type(type_id),
     date_key INT NOT NULL REFERENCES dim_date(date_key),
@@ -134,13 +138,18 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
+    CONSTRAINT fk_fact_property_district FOREIGN KEY (district_id)
+        REFERENCES dim_district(district_id)
+        ON DELETE SET NULL,
     CONSTRAINT uq_fact_source_listing UNIQUE (source_id, source_listing_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fact_date_district ON fact_property_listing(date_key, district_id);
+CREATE INDEX IF NOT EXISTS idx_fact_district ON fact_property_listing(district_id);
 CREATE INDEX IF NOT EXISTS idx_fact_source_date ON fact_property_listing(source_id, date_key);
 CREATE INDEX IF NOT EXISTS idx_fact_price ON fact_property_listing(price_million_vnd);
 CREATE INDEX IF NOT EXISTS idx_fact_area ON fact_property_listing(area_sqm);
+CREATE INDEX IF NOT EXISTS idx_fact_district_ward ON fact_property_listing(district_id, ward_id);
 
 -- 2.2. Bảng cách ly dữ liệu lỗi (Error Quarantine)
 -- Lưu các bản ghi không đạt chuẩn để xử lý/reprocess sau

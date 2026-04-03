@@ -6,8 +6,8 @@ BEGIN;
 -- 3.1. Seed nguồn dữ liệu
 INSERT INTO dim_source (source_name, source_url)
 VALUES
-    ('chotot', 'https://www.nhatot.com/ban-nha-ha-noi'),
-    ('batdongsan', 'https://batdongsan.com/ban-nha-ha-noi')
+    ('chotot', 'https://www.nhatot.com/mua-ban-bat-dong-san-ha-noi'),
+    ('batdongsan', 'https://batdongsan.com.vn/ban-nha-dat-ha-noi')
 ON CONFLICT (source_name) DO NOTHING;
 
 -- 3.2. Seed nhóm giá
@@ -55,7 +55,7 @@ VALUES
     ('Bac Tu Liem', 'Ha Noi', 'quan', 21.0716, 105.7610)
 ON CONFLICT (district_name) DO NOTHING;
 
--- 3.6. Seed bảng ngày cho khoảng +/- 365 ngày
+-- 3.6. Seed bảng ngày cho khoảng +/- 5 năm
 INSERT INTO dim_date (
     date_key, full_date, year, quarter, month, day, week_of_year, day_of_week, is_weekend
 )
@@ -69,7 +69,7 @@ SELECT
     EXTRACT(WEEK FROM d)::SMALLINT AS week_of_year,
     EXTRACT(ISODOW FROM d)::SMALLINT AS day_of_week,
     (EXTRACT(ISODOW FROM d) IN (6, 7)) AS is_weekend
-FROM generate_series(CURRENT_DATE - INTERVAL '365 days', CURRENT_DATE + INTERVAL '365 days', INTERVAL '1 day') d
+FROM generate_series(CURRENT_DATE - INTERVAL '5 years', CURRENT_DATE + INTERVAL '5 years', INTERVAL '1 day') d
 ON CONFLICT (date_key) DO NOTHING;
 
 COMMIT;
