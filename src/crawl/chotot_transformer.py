@@ -8,6 +8,16 @@ import pandas as pd
 from src.crawl.utils.normalizers import normalize_id
 
 
+def _map_transaction_type(ad_type: Optional[str]) -> str:
+    if not ad_type:
+        return "Khác"
+    t = ad_type.lower()
+    if t == "s": return "Bán"
+    if t == "r": return "Cho thuê"
+    if t == "u": return "Cần mua"
+    return "Khác"
+
+
 def _extract_location_fields(ad: Dict, location: Dict) -> Dict[str, Optional[str]]:
     if not isinstance(location, dict):
         location = {}
@@ -87,13 +97,12 @@ def build_detail_record(payload: Dict, ad_id: Optional[str] = None, list_id: Opt
         "source_url": f"https://www.nhatot.com/mua-ban-bat-dong-san/{ext_id}",
         "title": ad.get("subject") or ad.get("title") or "",
         "description": ad.get("body") or "",
-        "price_vnd": ad.get("price"),
-        "area_sqm": ad.get("area"),
         "address": _build_address_text(ad, location_fields),
         "district": location_fields["district"],
         "ward": location_fields["ward"],
         "city": location_fields["city"],
-        "property_type": ad.get("type") or ad.get("category_name"),
+        "property_type": ad.get("category_name") or ad.get("cg_name"),
+        "transaction_type": _map_transaction_type(ad.get("type")),
         "contact_name": ad.get("account_name") or ad.get("name"),
         "contact_phone": ad.get("phone"),
         "images": _extract_images(ad),
@@ -116,13 +125,12 @@ def build_fallback_record(row: pd.Series) -> Optional[Dict]:
         "source_url": f"https://www.nhatot.com/mua-ban-bat-dong-san/{ext_id}",
         "title": row.get("subject") or "",
         "description": "",
-        "price_vnd": row.get("price"),
-        "area_sqm": row.get("area"),
         "address": _build_address_text(ad, location_fields),
         "district": location_fields["district"],
         "ward": location_fields["ward"],
         "city": location_fields["city"],
         "property_type": None,
+        "transaction_type": _map_transaction_type(ad.get("type")),
         "contact_name": None,
         "contact_phone": None,
         "images": _extract_images(ad),

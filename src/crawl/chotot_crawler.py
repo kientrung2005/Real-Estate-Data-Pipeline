@@ -30,7 +30,7 @@ REQUEST_TIMEOUT = 15
 DETAIL_MAX_RETRIES = 2
 
 
-def get_listing_ids(page: int = 1, region_v2: str = "12000", limit: int = 20) -> Optional[pd.DataFrame]:
+def get_listing_ids(page: int = 1, region_v2: str = "12000", limit: int = 30) -> Optional[pd.DataFrame]:
     """Lấy danh sách tin và các trường nhẹ của một trang."""
     params = {
         "region_v2": region_v2,
@@ -100,7 +100,7 @@ def get_property_payload(list_id: str) -> Optional[Dict]:
     return None
 
 
-def crawl_chotot_to_mongodb(pages: int = 2) -> int:
+def crawl_chotot_to_mongodb(pages: int = 3) -> int:
     """Wrapper tương thích ngược, chuyển điều phối sang tầng pipeline."""
     from src.crawl.chotot_pipeline import crawl_chotot_to_mongodb as run_pipeline
 
