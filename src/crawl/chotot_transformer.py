@@ -8,16 +8,6 @@ import pandas as pd
 from src.crawl.utils.normalizers import normalize_id
 
 
-def _map_transaction_type(ad_type: Optional[str]) -> str:
-    if not ad_type:
-        return "Khác"
-    t = ad_type.lower()
-    if t == "s": return "Bán"
-    if t == "r": return "Cho thuê"
-    if t == "u": return "Cần mua"
-    return "Khác"
-
-
 def _extract_location_fields(ad: Dict, location: Dict) -> Dict[str, Optional[str]]:
     if not isinstance(location, dict):
         location = {}
@@ -82,6 +72,58 @@ def _build_address_text(ad: Dict, location_fields: Dict[str, Optional[str]]) -> 
     return ", ".join(cleaned)
 
 
+def _infer_property_type(ad: Dict) -> Optional[str]:
+    text = " ".join(
+        [
+            str(ad.get("type") or ""),
+            str(ad.get("category_name") or ""),
+            str(ad.get("subject") or ad.get("title") or ""),
+        ]
+    ).lower()
+
+    if not text.strip():
+        return None
+
+    if any(k in text for k in ["chung cư", "can ho", "căn hộ", "condotel", "penthouse"]):
+        return "Căn hộ/Chung cư"
+    if any(k in text for k in ["biệt thự", "lien ke", "liền kề", "villa"]):
+        return "Nhà biệt thự/Liền kề"
+    if any(k in text for k in ["mặt phố", "mat pho", "shophouse", "mặt tiền", "mat tien"]):
+        return "Nhà mặt phố/Shophouse"
+    if any(k in text for k in ["nhà riêng", "nha rieng", "nhà ngõ", "nha ngo", "hẻm", "hem"]):
+        return "Nhà riêng/Nhà ngõ hẻm"
+    if any(k in text for k in ["đất", "dat nen", "đất nền", "thổ cư", "tho cu"]):
+        return "Đất nền/Đất thổ cư"
+    if any(k in text for k in ["phòng trọ", "phong tro", "nhà trọ", "nha tro"]):
+        return "Phòng trọ"
+    if any(k in text for k in ["mặt bằng", "mat bang", "cửa hàng", "cua hang", "ki ốt", "kiot"]):
+        return "Mặt bằng kinh doanh"
+    if any(k in text for k in ["kho", "nhà xưởng", "nha xuong", "xưởng", "xuong"]):
+        return "Kho bãi/Nhà xưởng"
+
+    return "Khác"
+
+
+def _infer_transaction_type(ad: Dict) -> str:
+    text = " ".join(
+        [
+            str(ad.get("type") or ""),
+            str(ad.get("category_name") or ""),
+            str(ad.get("subject") or ad.get("title") or ""),
+        ]
+    ).lower()
+
+    if not text.strip():
+        return "Khác"
+
+    if any(k in text for k in ["cho thuê", "cho thue", "thuê", "thue"]):
+        return "Cho thuê"
+    if any(k in text for k in ["bán", "ban", "chuyển nhượng", "chuyen nhuong"]):
+        return "Bán"
+
+    return "Khác"
+
+
 def build_detail_record(payload: Dict, ad_id: Optional[str] = None, list_id: Optional[str] = None) -> Optional[Dict]:
     ad = payload.get("ad", {})
     location = ad.get("location") or {}
@@ -97,12 +139,14 @@ def build_detail_record(payload: Dict, ad_id: Optional[str] = None, list_id: Opt
         "source_url": f"https://www.nhatot.com/mua-ban-bat-dong-san/{ext_id}",
         "title": ad.get("subject") or ad.get("title") or "",
         "description": ad.get("body") or "",
+        "price_vnd": ad.get("price"),
+        "area_sqm": ad.get("area"),
         "address": _build_address_text(ad, location_fields),
         "district": location_fields["district"],
         "ward": location_fields["ward"],
         "city": location_fields["city"],
-        "property_type": ad.get("category_name") or ad.get("cg_name"),
-        "transaction_type": _map_transaction_type(ad.get("type")),
+        "property_type": _infer_property_type(ad),
+        "transaction_type": _infer_transaction_type(ad),
         "contact_name": ad.get("account_name") or ad.get("name"),
         "contact_phone": ad.get("phone"),
         "images": _extract_images(ad),
@@ -125,12 +169,14 @@ def build_fallback_record(row: pd.Series) -> Optional[Dict]:
         "source_url": f"https://www.nhatot.com/mua-ban-bat-dong-san/{ext_id}",
         "title": row.get("subject") or "",
         "description": "",
+        "price_vnd": row.get("price"),
+        "area_sqm": row.get("area"),
         "address": _build_address_text(ad, location_fields),
         "district": location_fields["district"],
         "ward": location_fields["ward"],
         "city": location_fields["city"],
-        "property_type": None,
-        "transaction_type": _map_transaction_type(ad.get("type")),
+        "property_type": _infer_property_type(ad),
+        "transaction_type": _infer_transaction_type(ad),
         "contact_name": None,
         "contact_phone": None,
         "images": _extract_images(ad),

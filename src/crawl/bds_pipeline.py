@@ -1,10 +1,3 @@
-"""Tầng điều phối cho pipeline crawl raw của Batdongsan.com.vn."""
-
-import sys
-from pathlib import Path
-
-
-
 import time
 import random
 from typing import List, Dict

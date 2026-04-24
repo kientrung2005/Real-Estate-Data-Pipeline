@@ -137,6 +137,8 @@ def build_bds_record(row_data: Dict, detail_data: Optional[Dict] = None) -> Opti
     record = {
         "source": "batdongsan",
         "external_id": ext_id,
+        "price_vnd": price_val,
+        "area_sqm": area_val,
         "source_url": row_data.get("url", ""),
         "title": row_data.get("title", ""),
         "description": "",
