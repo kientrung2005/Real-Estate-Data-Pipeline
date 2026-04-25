@@ -8,11 +8,37 @@ import pandas as pd
 from src.crawl.utils.normalizers import normalize_id
 
 
+def _normalize_nhatot_url(raw_url: str, ext_id: str) -> str:
+    """Đảm bảo URL luôn có .htm và đúng domain."""
+    if not raw_url or not raw_url.startswith("http"):
+        return f"https://www.nhatot.com/mua-ban-bat-dong-san/{ext_id}.htm"
+
+    # Nếu đã có .htm rồi thì dùng luôn
+    if raw_url.endswith(".htm"):
+        return raw_url
+
+    # URL thiếu .htm (dạng API listing trả về): thêm vào
+    # vd: https://www.nhatot.com/mua-ban-bat-dong-san/175647218
+    #  → https://www.nhatot.com/mua-ban-bat-dong-san/175647218.htm
+    return raw_url.rstrip("/") + ".htm"
+
+
+def _resolve_source_url(ad: Dict, list_id: str) -> str:
+    """Lấy URL thật từ payload, prioritize list_id vì đây là ID đúng cho URL Nhatot."""
+    raw_url = (
+        ad.get("share_url")
+        or ad.get("url")
+        or ad.get("webp_url")
+    )
+    return _normalize_nhatot_url(raw_url or "", list_id)
+
+
 def _extract_location_fields(ad: Dict, location: Dict) -> Dict[str, Optional[str]]:
     if not isinstance(location, dict):
         location = {}
 
-    city = ad.get("region_name") or location.get("region_name")
+    # TODO: hardcode tạm cho Hà Nội, cần dùng region_name nếu mở rộng đa tỉnh
+    city = "Hà Nội"
     district = ad.get("area_name") or location.get("area_name")
     ward = location.get("ward_name") or ad.get("ward_name") or ad.get("sub_area_name")
     address = location.get("address") or ad.get("address")
@@ -129,14 +155,14 @@ def build_detail_record(payload: Dict, ad_id: Optional[str] = None, list_id: Opt
     location = ad.get("location") or {}
     location_fields = _extract_location_fields(ad, location)
 
-    ext_id = normalize_id(ad.get("ad_id")) or normalize_id(ad_id) or normalize_id(list_id)
-    if not ext_id:
+    l_id = normalize_id(ad.get("list_id")) or normalize_id(list_id) or normalize_id(ad.get("ad_id"))
+    if not l_id:
         return None
 
     return {
         "source": "chotot",
-        "external_id": ext_id,
-        "source_url": f"https://www.nhatot.com/mua-ban-bat-dong-san/{ext_id}",
+        "external_id": normalize_id(ad.get("ad_id")) or normalize_id(ad_id) or l_id,
+        "source_url": _resolve_source_url(ad, l_id),
         "title": ad.get("subject") or ad.get("title") or "",
         "description": ad.get("body") or "",
         "price_vnd": ad.get("price"),
@@ -156,8 +182,8 @@ def build_detail_record(payload: Dict, ad_id: Optional[str] = None, list_id: Opt
 
 
 def build_fallback_record(row: pd.Series) -> Optional[Dict]:
-    ext_id = normalize_id(row.get("ad_id"))
-    if not ext_id:
+    l_id = normalize_id(row.get("list_id")) or normalize_id(row.get("ad_id"))
+    if not l_id:
         return None
 
     ad = row.to_dict()
@@ -165,8 +191,8 @@ def build_fallback_record(row: pd.Series) -> Optional[Dict]:
 
     return {
         "source": "chotot",
-        "external_id": ext_id,
-        "source_url": f"https://www.nhatot.com/mua-ban-bat-dong-san/{ext_id}",
+        "external_id": normalize_id(row.get("ad_id")) or l_id,
+        "source_url": _resolve_source_url(ad, l_id),
         "title": row.get("subject") or "",
         "description": "",
         "price_vnd": row.get("price"),

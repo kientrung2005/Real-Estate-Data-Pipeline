@@ -1,5 +1,7 @@
 """Các hàm repository MongoDB cho việc lưu raw listing."""
 
+from datetime import UTC, datetime
+
 import pandas as pd
 from pymongo import UpdateOne
 
@@ -18,10 +20,14 @@ def upsert_raw_listings_to_mongodb(df: pd.DataFrame, collection_name: str = "raw
         source = doc.get("source")
         if not external_id or not source:
             continue
+        first_crawled_at = doc.get("first_crawled_at") or doc.get("crawled_at") or datetime.now(UTC).isoformat()
         operations.append(
             UpdateOne(
                 {"source": source, "external_id": external_id},
-                {"$set": doc},
+                {
+                    "$set": doc,
+                    "$setOnInsert": {"first_crawled_at": first_crawled_at},
+                },
                 upsert=True,
             )
         )

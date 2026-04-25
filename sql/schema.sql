@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS dim_district (
     district_name VARCHAR(100) NOT NULL UNIQUE,
     city_name VARCHAR(100) NOT NULL DEFAULT 'Ha Noi',
     district_type VARCHAR(20) CHECK (district_type IN ('quan', 'huyen', 'thi_xa')),
+    alias_names TEXT[] NOT NULL DEFAULT '{}'::text[],
     latitude NUMERIC(9,6),
     longitude NUMERIC(9,6),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -50,11 +51,13 @@ CREATE TABLE IF NOT EXISTS dim_district (
 -- 1.4. Bảng phường/xã (Nguồn: Danh mục hành chính chi tiết)
 CREATE TABLE IF NOT EXISTS dim_ward (
     ward_id SERIAL PRIMARY KEY,
-    city_name VARCHAR(100) NOT NULL DEFAULT 'Ha Noi',
+    city_name VARCHAR(100) NOT NULL DEFAULT 'Hà Nội',
     district_id SMALLINT,
     ward_name VARCHAR(120) NOT NULL,
+    canonical_name VARCHAR(120) NOT NULL,
+    alias_names TEXT[] NOT NULL DEFAULT '{}'::text[],
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_dim_ward UNIQUE (district_id, ward_name),
+    CONSTRAINT uq_dim_ward_canonical UNIQUE (district_id, canonical_name),
     CONSTRAINT fk_dim_ward_district FOREIGN KEY (district_id)
         REFERENCES dim_district(district_id)
         ON DELETE SET NULL
@@ -113,13 +116,11 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     run_id UUID REFERENCES etl_run_log(run_id),
     source_id SMALLINT NOT NULL REFERENCES dim_source(source_id),
     district_id SMALLINT,
-    ward_id INT REFERENCES dim_ward(ward_id),
     type_id SMALLINT REFERENCES dim_property_type(type_id),
     date_key INT NOT NULL REFERENCES dim_date(date_key),
     price_band_id SMALLINT REFERENCES dim_price_band(price_band_id),
     area_band_id SMALLINT REFERENCES dim_area_band(area_band_id),
 
-    source_listing_id VARCHAR(120),
     title TEXT,
     listing_url TEXT,
     address_text TEXT,
@@ -127,9 +128,6 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     price_million_vnd NUMERIC(12,2),
     area_sqm NUMERIC(10,2),
     price_per_sqm_million NUMERIC(12,4),
-    bedrooms SMALLINT,
-    bathrooms SMALLINT,
-    floor_count SMALLINT,
 
     first_seen_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_seen_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -141,7 +139,7 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     CONSTRAINT fk_fact_property_district FOREIGN KEY (district_id)
         REFERENCES dim_district(district_id)
         ON DELETE SET NULL,
-    CONSTRAINT uq_fact_source_listing UNIQUE (source_id, source_listing_id)
+    CONSTRAINT uq_fact_source_listing UNIQUE (source_id, listing_url)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fact_date_district ON fact_property_listing(date_key, district_id);
@@ -149,7 +147,6 @@ CREATE INDEX IF NOT EXISTS idx_fact_district ON fact_property_listing(district_i
 CREATE INDEX IF NOT EXISTS idx_fact_source_date ON fact_property_listing(source_id, date_key);
 CREATE INDEX IF NOT EXISTS idx_fact_price ON fact_property_listing(price_million_vnd);
 CREATE INDEX IF NOT EXISTS idx_fact_area ON fact_property_listing(area_sqm);
-CREATE INDEX IF NOT EXISTS idx_fact_district_ward ON fact_property_listing(district_id, ward_id);
 
 -- 2.2. Bảng cách ly dữ liệu lỗi (Error Quarantine)
 -- Lưu các bản ghi không đạt chuẩn để xử lý/reprocess sau
@@ -157,7 +154,6 @@ CREATE TABLE IF NOT EXISTS quarantine_listing (
     quarantine_id BIGSERIAL PRIMARY KEY,
     run_id UUID REFERENCES etl_run_log(run_id),
     source_name VARCHAR(50),
-    source_listing_id VARCHAR(120),
     listing_url TEXT,
     error_stage VARCHAR(30) NOT NULL CHECK (error_stage IN ('ingest', 'transform', 'load')),
     error_code VARCHAR(50),

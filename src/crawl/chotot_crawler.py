@@ -69,6 +69,8 @@ def get_listing_ids(page: int = 1, region_v2: str = "12000", limit: int = 30) ->
                 "image",
                 "thumbnail_image",
                 "webp_image",
+                "url",
+                "share_url",
             ]
             if c in df.columns
         ]

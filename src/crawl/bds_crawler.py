@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 import time
 import random
+import re
 from typing import Dict, Optional
 import pandas as pd
 from playwright.sync_api import sync_playwright, Route, Playwright, Browser, BrowserContext, Page
@@ -127,6 +128,65 @@ class BDSCrawler:
             if not contact_name:
                 alt_name = self.page.query_selector(".re__contact-title")
                 contact_name = alt_name.get_attribute("title") if alt_name else ""
+
+            # ----------------------------------------------------------------
+            # Lấy địa chỉ từ trang detail — ưu tiên dòng chính, bỏ phần chú
+            # thích hành chính mới trong ngoặc đơn.
+            # ----------------------------------------------------------------
+            address_detail = ""
+
+            # Selector theo thứ tự ưu tiên — thử từng cái, lấy cái đầu tiên có nội dung.
+            ADDRESS_SELECTORS = [
+                # Dòng địa chỉ ngắn nằm dưới tiêu đề (thường đầy đủ nhất: Dự án, Xã, Huyện)
+                ".re__pr-short-info-item.js__pr-address .re__pr-short-info-item-value",
+                ".re__pr-short-info-item.js__pr-address",
+                # Breadcrumb: Bán / Hà Nội / Huyện Đan Phượng / Nhà biệt thự...
+                # → lấy phần [1] (Hà Nội) đến [-2] (tên huyện) để ghép thành chuỗi
+                ".js__pr-address",
+                ".re__pr-short-info-item--address",
+            ]
+
+            for sel in ADDRESS_SELECTORS:
+                addr_el = self.page.query_selector(sel)
+                if not addr_el:
+                    continue
+                raw_value = addr_el.inner_text().strip()
+                if not raw_value:
+                    continue
+                # Flatten xuống 1 dòng, xóa ký tự rác đầu chuỗi
+                cleaned = re.sub(r"[\r\n]+", ", ", raw_value)
+                cleaned = re.sub(r"\s+", " ", cleaned).strip()
+                cleaned = re.sub(r"^[·•\s.,;:\-_|/\\]+", "", cleaned).strip()
+                # Bỏ phần chú thích địa chỉ mới trong ngoặc: (Xã Ô Diên, Hà Nội mới)
+                cleaned = re.sub(r"\s*\([^)]*\)", "", cleaned).strip()
+                cleaned = re.sub(r",\s*,", ",", cleaned).strip().strip(",").strip()
+                if cleaned:
+                    address_detail = cleaned
+                    break
+
+            # Fallback: ghép từ các span con nếu selector trên miss
+            if not address_detail:
+                spans = self.page.query_selector_all(".js__pr-address span, .re__pr-short-info-item.js__pr-address span")
+                chunks = [s.inner_text().strip() for s in spans if s.inner_text().strip()]
+                if chunks:
+                    joined = ", ".join(chunks)
+                    joined = re.sub(r"\s*\([^)]*\)", "", joined).strip()
+                    address_detail = re.sub(r",\s*,", ",", joined).strip().strip(",")
+
+            # ----------------------------------------------------------------
+            # Lấy quận/huyện từ breadcrumb — nguồn đáng tin cậy nhất vì BDS
+            # luôn render breadcrumb: Bán > Hà Nội > Huyện Đan Phượng > ...
+            # ----------------------------------------------------------------
+            detail_district = ""
+            try:
+                breadcrumb_els = self.page.query_selector_all(".re__breadcrumb a, .re__breadcrumb span")
+                # Lấy phần tử thứ 3 (index 2): thường là Quận/Huyện
+                if len(breadcrumb_els) >= 3:
+                    raw_bc = breadcrumb_els[2].inner_text().strip()
+                    # Bỏ prefix "Quận"/"Huyện" để lưu tên thuần
+                    detail_district = re.sub(r"^(Quận|Huyện|Thị xã)\s+", "", raw_bc, flags=re.IGNORECASE).strip()
+            except Exception:
+                detail_district = ""
             
             # Cào Số Điện Thoại - Giải pháp Tối Thuận: Click và quét toàn vùng Text bằng Text Regex (bỏ qua DOM complex)
             contact_phone = ""
@@ -147,7 +207,6 @@ class BDSCrawler:
                 clean_body = body_text.replace(" ", "").replace(".", "").replace("-", "")
                 
                 # 3. Dùng Regex săn số điện thoại di động VN chuẩn (03, 05, 07, 08, 09 kèm 8 số)
-                import re
                 matched_phones = re.findall(r'(0[35789][0-9]{8})', clean_body)
                 
                 if matched_phones:
@@ -169,7 +228,9 @@ class BDSCrawler:
                 "description": description,
                 "attributes": attributes,
                 "contact_name": contact_name,
-                "contact_phone": contact_phone
+                "contact_phone": contact_phone,
+                "address": address_detail,
+                "district": detail_district,
             }
         except Exception as e:
             print(f"Lỗi truy cập trang chi tiết {url}: {e}")

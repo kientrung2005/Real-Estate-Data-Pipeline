@@ -40,19 +40,33 @@ VALUES
     ('biet_thu')
 ON CONFLICT (type_name) DO NOTHING;
 
--- 3.5. Seed quận/huyện Hà Nội
-INSERT INTO dim_district (district_name, city_name, district_type, latitude, longitude)
+-- 3.5. Seed quận/huyện Hà Nội (21 districts with coordinates)
+INSERT INTO dim_district (district_name, city_name, district_type, latitude, longitude, alias_names)
 VALUES
-    ('Ba Dinh', 'Ha Noi', 'quan', 21.0340, 105.8142),
-    ('Hoan Kiem', 'Ha Noi', 'quan', 21.0287, 105.8526),
-    ('Dong Da', 'Ha Noi', 'quan', 21.0181, 105.8292),
-    ('Cau Giay', 'Ha Noi', 'quan', 21.0362, 105.7907),
-    ('Thanh Xuan', 'Ha Noi', 'quan', 20.9966, 105.8107),
-    ('Hai Ba Trung', 'Ha Noi', 'quan', 21.0058, 105.8574),
-    ('Hoang Mai', 'Ha Noi', 'quan', 20.9744, 105.8644),
-    ('Long Bien', 'Ha Noi', 'quan', 21.0469, 105.8944),
-    ('Nam Tu Liem', 'Ha Noi', 'quan', 21.0125, 105.7693),
-    ('Bac Tu Liem', 'Ha Noi', 'quan', 21.0716, 105.7610)
+    -- Central urban districts (10)
+    ('Ba Dinh', 'Ha Noi', 'quan', 21.0285, 105.8581, ARRAY['Ba Dinh', 'Quan Ba Dinh', 'Q. Ba Dinh', 'Q.Ba Dinh']::text[]),
+    ('Hoan Kiem', 'Ha Noi', 'quan', 21.0269, 105.8541, ARRAY['Hoan Kiem', 'Quan Hoan Kiem', 'Q. Hoan Kiem', 'Q.Hoan Kiem']::text[]),
+    ('Dong Da', 'Ha Noi', 'quan', 21.0216, 105.8656, ARRAY['Dong Da', 'Quan Dong Da', 'Q. Dong Da', 'Q.Dong Da']::text[]),
+    ('Cau Giay', 'Ha Noi', 'quan', 21.0087, 105.7836, ARRAY['Cau Giay', 'Quan Cau Giay', 'Q. Cau Giay', 'Q.Cau Giay']::text[]),
+    ('Thanh Xuan', 'Ha Noi', 'quan', 21.0033, 105.8426, ARRAY['Thanh Xuan', 'Quan Thanh Xuan', 'Q. Thanh Xuan', 'Q.Thanh Xuan']::text[]),
+    ('Hai Ba Trung', 'Ha Noi', 'quan', 21.0093, 105.8801, ARRAY['Hai Ba Trung', 'Quan Hai Ba Trung', 'Q. Hai Ba Trung', 'Q.HBT']::text[]),
+    ('Hoang Mai', 'Ha Noi', 'quan', 20.9927, 105.8920, ARRAY['Hoang Mai', 'Quan Hoang Mai', 'Q. Hoang Mai', 'Q.Hoang Mai']::text[]),
+    ('Long Bien', 'Ha Noi', 'quan', 21.0616, 105.8865, ARRAY['Long Bien', 'Quan Long Bien', 'Q. Long Bien', 'Q.Long Bien']::text[]),
+    ('Nam Tu Liem', 'Ha Noi', 'quan', 21.0488, 105.7584, ARRAY['Nam Tu Liem', 'Quan Nam Tu Liem', 'Q. Nam Tu Liem', 'Q.Nam Tu Liem']::text[]),
+    ('Bac Tu Liem', 'Ha Noi', 'quan', 21.0932, 105.7737, ARRAY['Bac Tu Liem', 'Quan Bac Tu Liem', 'Q. Bac Tu Liem', 'Q.Bac Tu Liem']::text[]),
+    -- Inner ring urban districts (3)
+    ('Tay Ho', 'Ha Noi', 'quan', 21.0808, 105.8142, ARRAY['Tay Ho', 'Quan Tay Ho', 'Q. Tay Ho', 'Q.Tay Ho']::text[]),
+    ('Dong Anh', 'Ha Noi', 'huyen', 21.1789, 105.9330, ARRAY['Dong Anh', 'Huyen Dong Anh', 'H. Dong Anh', 'H.Dong Anh']::text[]),
+    ('Gia Lam', 'Ha Noi', 'huyen', 21.1493, 105.9757, ARRAY['Gia Lam', 'Huyen Gia Lam', 'H. Gia Lam', 'H.Gia Lam']::text[]),
+    -- Suburban areas (8)
+    ('Thanh Tri', 'Ha Noi', 'huyen', 20.8860, 105.9140, ARRAY['Thanh Tri', 'Huyen Thanh Tri', 'H. Thanh Tri', 'H.Thanh Tri']::text[]),
+    ('Son Tay', 'Ha Noi', 'thi_xa', 21.1050, 105.5380, ARRAY['Son Tay', 'Thi xa Son Tay', 'TX Son Tay', 'TX. Son Tay']::text[]),
+    ('Quoc Oai', 'Ha Noi', 'huyen', 21.2120, 105.5450, ARRAY['Quoc Oai', 'Huyen Quoc Oai', 'H. Quoc Oai', 'H.Quoc Oai']::text[]),
+    ('Hoai Duc', 'Ha Noi', 'huyen', 21.2260, 105.6870, ARRAY['Hoai Duc', 'Huyen Hoai Duc', 'H. Hoai Duc', 'H.Hoai Duc']::text[]),
+    ('Ha Dong', 'Ha Noi', 'huyen', 20.9620, 105.7660, ARRAY['Ha Dong', 'Huyen Ha Dong', 'H. Ha Dong', 'H.Ha Dong']::text[]),
+    ('Chuong My', 'Ha Noi', 'huyen', 20.8580, 105.6660, ARRAY['Chuong My', 'Huyen Chuong My', 'H. Chuong My', 'H.Chuong My']::text[]),
+    ('Thach That', 'Ha Noi', 'huyen', 21.3690, 105.7460, ARRAY['Thach That', 'Huyen Thach That', 'H. Thach That', 'H.Thach That']::text[]),
+    ('Dan Phuong', 'Ha Noi', 'huyen', 21.3250, 105.6950, ARRAY['Dan Phuong', 'Huyen Dan Phuong', 'H. Dan Phuong', 'H.Dan Phuong']::text[])
 ON CONFLICT (district_name) DO NOTHING;
 
 -- 3.6. Seed bảng ngày cho khoảng +/- 5 năm
@@ -71,5 +85,11 @@ SELECT
     (EXTRACT(ISODOW FROM d) IN (6, 7)) AS is_weekend
 FROM generate_series(CURRENT_DATE - INTERVAL '5 years', CURRENT_DATE + INTERVAL '5 years', INTERVAL '1 day') d
 ON CONFLICT (date_key) DO NOTHING;
+
+-- 3.7. Seed phường/xã tiêu biểu (Dan Phuong)
+INSERT INTO dim_ward (district_id, ward_name, canonical_name, alias_names)
+VALUES
+    (21, 'Xa Tan Hoi', 'Tân Hội', ARRAY['Tan Hoi', 'Xa Tan Hoi', 'Tân Hội', 'Xã Tân Hội']::text[])
+ON CONFLICT (district_id, canonical_name) DO NOTHING;
 
 COMMIT;

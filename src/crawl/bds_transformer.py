@@ -93,7 +93,7 @@ def _extract_location_fields(address_str: str) -> Dict[str, Optional[str]]:
         
     address_str = address_str.strip(' .-,')
     
-    city, district, ward = None, None, None
+    city, district, ward = "Hà Nội", None, None
     
     # Pattern Q. / H. / Quận / Huyện
     dist_match = re.search(r'(?:Q\.|H\.|Quận|Huyện|TX\.|Thị xã)\s+([^,.\(]+)', address_str, re.IGNORECASE)
@@ -106,8 +106,6 @@ def _extract_location_fields(address_str: str) -> Dict[str, Optional[str]]:
         ward = ward_match.group(1).strip()
         
     parts = [p.strip() for p in address_str.split(',')]
-    if not city:
-        city = parts[-1] if len(parts) > 0 else None
     if not district and len(parts) > 1:
         district = parts[-2]
     if not ward and len(parts) > 2:
@@ -125,8 +123,15 @@ def build_bds_record(row_data: Dict, detail_data: Optional[Dict] = None) -> Opti
     if not ext_id:
         return None
 
-    address_str = row_data.get("address", "")
+    list_address = (row_data.get("address") or "").strip()
+    detail_address = ((detail_data or {}).get("address") or "").strip()
+
+    # Ưu tiên tuyệt đối địa chỉ detail vì đây là nguồn hiển thị chính xác nhất trên trang chi tiết.
+    address_str = detail_address or list_address
+
     location_fields = _extract_location_fields(address_str)
+    if detail_data and not location_fields.get("district"):
+        location_fields["district"] = detail_data.get("district")
 
     price_raw = row_data.get("price", "")
     area_raw = row_data.get("area", "")
