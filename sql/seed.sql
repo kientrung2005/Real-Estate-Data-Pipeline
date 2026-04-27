@@ -37,7 +37,10 @@ VALUES
     ('nha_rieng'),
     ('nha_mat_pho'),
     ('dat_nen'),
-    ('biet_thu')
+    ('biet_thu'),
+    ('phong_tro'),
+    ('mat_bang'),
+    ('kho_xuong')
 ON CONFLICT (type_name) DO NOTHING;
 
 -- 3.5. Seed quận/huyện Hà Nội (21 districts with coordinates)

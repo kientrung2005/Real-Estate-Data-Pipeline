@@ -1,11 +1,14 @@
 """Các hàm repository MongoDB cho việc lưu raw listing."""
 
+import logging
 from datetime import UTC, datetime
 
 import pandas as pd
 from pymongo import UpdateOne
 
 from src.database.mongodb_connect import MongoDBConnect
+
+logger = logging.getLogger(__name__)
 
 
 def upsert_raw_listings_to_mongodb(df: pd.DataFrame, collection_name: str = "raw_listings") -> int:
@@ -39,7 +42,13 @@ def upsert_raw_listings_to_mongodb(df: pd.DataFrame, collection_name: str = "raw
         db = mongo.db
         result = db[collection_name].bulk_write(operations, ordered=False)
 
-    return result.upserted_count + result.modified_count
+    total = result.upserted_count + result.modified_count
+    if result.matched_count > 0 and total == 0:
+        logger.info(
+            "MongoDB: %d khớp nhưng 0 thay đổi (dữ liệu giống nhau)",
+            result.matched_count,
+        )
+    return total
 
 
 def get_locations_master_data(collection_name: str = "raw_listings", source: str = "chotot") -> pd.DataFrame:

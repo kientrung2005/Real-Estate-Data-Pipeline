@@ -1,10 +1,13 @@
 """Biến đổi payload thô của Batdongsan.com.vn thành bản ghi raw đã chuẩn hóa."""
 
+import logging
 import re
 from datetime import UTC, datetime
 from typing import Dict, Optional
 import pandas as pd
 from src.crawl.utils.normalizers import normalize_id
+
+logger = logging.getLogger(__name__)
 
 def parse_bds_area(area_str: str) -> Optional[float]:
     """Chuyển '75 m2' hoặc '75,5 m2' thành 75.5 (float)."""
@@ -38,7 +41,8 @@ def parse_bds_price(price_str: str, area_sqm: Optional[float] = None) -> Optiona
         if "triệu/m2" in price_str or "triệu/m²" in price_str:
             if area_sqm:
                 return number * 1_000_000 * area_sqm
-            return None # Không tính được nếu thiếu diện tích
+            logger.warning("BDS price per sqm without area_sqm: '%s' — record will be quarantined", price_str)
+            return None
         if "triệu" in price_str:
             return number * 1_000_000
             
