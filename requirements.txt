@@ -1,7 +1,6 @@
 # Database
 psycopg2-binary==2.9.9
-sqlalchemy==2.0.23
-alembic==1.12.1
+# sqlalchemy và alembic đã được loại bỏ để tránh xung đột với Airflow
 pymongo==4.6.1
 
 # Web Scraping
@@ -9,6 +8,7 @@ requests==2.31.0
 beautifulsoup4==4.12.2
 lxml==4.9.3
 playwright
+playwright-stealth
 
 
 # Data Processing

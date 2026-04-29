@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -21,10 +19,13 @@ services:
       - real_estate_network
 
   airflow-webserver:
-    image: apache/airflow:2.9.3-python3.12
+    build: .
+    image: real-estate-airflow:latest
     container_name: real_estate_airflow_webserver
     depends_on:
       - postgres
+    env_file:
+      - .env.docker
     environment:
       #Kết nối về CÙNG database real_estate_db
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://postgres:admin123@postgres:5432/real_estate_db
@@ -38,6 +39,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
+      - ./src:/opt/airflow/src
     networks:
       - real_estate_network
     # Tự động init database + tạo user admin lần đầu chạy
@@ -45,11 +47,14 @@ services:
 
   #Thêm Airflow Scheduler
   airflow-scheduler:
-    image: apache/airflow:2.9.3-python3.12
+    build: .
+    image: real-estate-airflow:latest
     container_name: real_estate_airflow_scheduler
     depends_on:
       - postgres
       - airflow-webserver
+    env_file:
+      - .env.docker
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql://postgres:admin123@postgres:5432/real_estate_db
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -60,6 +65,7 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
+      - ./src:/opt/airflow/src
     networks:
       - real_estate_network
     command: airflow scheduler

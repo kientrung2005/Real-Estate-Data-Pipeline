@@ -14,8 +14,8 @@ def crawl_bds_to_mongodb(pages: int = 1, fetch_detail: bool = True) -> int:
     total_saved = 0
     seen_ad_ids = set()
     
-    # Bỏ headless để trình duyệt hiển thị, giúp qua mặt Web Application Firewall của Cloudflare dễ dàng hơn.
-    crawler = BDSCrawler(headless=False)
+    # Trong Docker không có giao diện, bắt buộc phải dùng headless=True
+    crawler = BDSCrawler(headless=True)
     
     try:
         for page in range(1, pages + 1):
