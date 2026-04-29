@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import re
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -185,6 +186,7 @@ def build_fact_row(
     fact_row = {
         "run_id": None,
         "source_id": source_id,
+        "external_id": external_id,
         "district_id": district_id,
         "type_id": resolve_property_type(raw["property_type"], dim_maps["property_type"]),
         "date_key": date_key,
@@ -200,6 +202,39 @@ def build_fact_row(
         "last_seen_at": crawled_at,
         "is_active": True,
     }
+
+    # Validate address_text for OCR/truncation errors - AFTER clean_address_text creates final address
+    address_text = fact_row.get("address_text") or ""
+    source_url = raw.get("source_url") or ""
+    
+    # Check both address_text and source URL for OCR/truncation patterns
+    ocr_patterns = [
+        # Patterns that match Vietnamese diacritics or URL slugs
+        (r"(?:Phuong|Phường)\s+Dinh\b", "Phường Dinh (truncation)"),
+        (r"(?:Phuong|Phường)\s+Lh\s+E\b", "Phường Lh E (OCR - malformed ward)"),
+        (r"(?:Phuong|Phường)\s+Thanh\s+Cong\s+The\b", "Phường Thanh Cong The (OCR - truncation)"),
+        (r"\bLh\s+E\b", "Lh E (OCR - ward fragment)"),
+        # Also check URL for URL-slugified OCR patterns
+        (r"lh-e", "lh-e in URL (OCR - malformed ward slug)"),
+        (r"thanh-cong-the", "thanh-cong-the in URL (OCR - truncation slug)"),
+        # User-reported lỗi từ crawlers
+        (r"(?:Phuong|Phường)\s+Chi\b", "Phường Chi (truncation - Đan Phượng)"),
+        (r"(?:Phuong|Phường)\s+Vien\b", "Phường Vien (truncation - Hoài Đức)"),
+        (r"Quan\s+Hoang\s+Mai\b", "Quận Hoàng Mai (incomplete address - missing ward)"),
+    ]
+
+    for pattern, reason in ocr_patterns:
+        # Check both address_text and URL
+        if re.search(pattern, address_text, re.IGNORECASE) or re.search(pattern, source_url, re.IGNORECASE):
+            return None, {
+                "source_name": source,
+                "listing_url": raw["source_url"],
+                "error_stage": "transform",
+                "error_code": "ADDRESS_ERROR",
+                "error_message": f"Địa chỉ chứa lỗi OCR/truncation: {reason}",
+                "raw_payload": raw["raw_payload"],
+            }
+
     return fact_row, None
 
 
@@ -208,36 +243,92 @@ def build_fact_row(
 def upsert_fact_rows(pg: PostgreSQLConnect, rows: Sequence[Dict[str, Any]]) -> int:
     if not rows:
         return 0
-    columns = [
-        "run_id", "source_id", "district_id", "type_id", "date_key",
+
+    # Determine which optional columns exist in the target DB
+    pg.cursor.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=%s",
+        ("fact_property_listing",),
+    )
+    existing_cols = {r[0] for r in pg.cursor.fetchall()}
+
+    columns = ["run_id", "source_id", "external_id", 
+        "district_id", "type_id", "date_key",
         "price_band_id", "area_band_id", "title", "listing_url",
         "address_text", "price_million_vnd", "area_sqm",
         "price_per_sqm_million", "first_seen_at", "last_seen_at", "is_active",
     ]
+
     values = [tuple(row.get(col) for col in columns) for row in rows]
-    insert_sql = sql.SQL(
+
+    # Inspect UNIQUE constraints to choose a safe ON CONFLICT target
+    pg.cursor.execute(
         """
-        INSERT INTO fact_property_listing ({fields})
-        VALUES %s
-        ON CONFLICT (source_id, listing_url)
-        DO UPDATE SET
-            run_id = EXCLUDED.run_id,
-            district_id = EXCLUDED.district_id,
-            type_id = EXCLUDED.type_id,
-            date_key = EXCLUDED.date_key,
-            price_band_id = EXCLUDED.price_band_id,
-            area_band_id = EXCLUDED.area_band_id,
-            title = EXCLUDED.title,
-            listing_url = EXCLUDED.listing_url,
-            address_text = EXCLUDED.address_text,
-            price_million_vnd = EXCLUDED.price_million_vnd,
-            area_sqm = EXCLUDED.area_sqm,
-            price_per_sqm_million = EXCLUDED.price_per_sqm_million,
-            last_seen_at = GREATEST(fact_property_listing.last_seen_at, EXCLUDED.last_seen_at),
-            is_active = EXCLUDED.is_active,
-            updated_at = CURRENT_TIMESTAMP
-        """
-    ).format(fields=sql.SQL(", ").join(map(sql.Identifier, columns)))
+        SELECT tc.constraint_name, kcu.column_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+        WHERE tc.table_schema = 'public'
+          AND tc.table_name = %s
+          AND tc.constraint_type = 'UNIQUE'
+        """,
+        ("fact_property_listing",),
+    )
+    constraints: Dict[str, List[str]] = {}
+    for cname, col in pg.cursor.fetchall():
+        constraints.setdefault(cname, []).append(col)
+
+    conflict_target: Optional[str] = None
+    for cols in constraints.values():
+        cols_norm = [c.lower() for c in cols]
+        cols_set = set(cols_norm)
+        if cols_set == {"source_id", "external_id"}:
+            conflict_target = "(source_id, external_id)"
+            break
+        if cols_set == {"source_id", "listing_url"}:
+            conflict_target = "(source_id, listing_url)"
+            break
+
+    if conflict_target:
+        update_items = [
+            "run_id = EXCLUDED.run_id",
+            "district_id = EXCLUDED.district_id",
+            "type_id = EXCLUDED.type_id",
+            "date_key = EXCLUDED.date_key",
+            "price_band_id = EXCLUDED.price_band_id",
+            "area_band_id = EXCLUDED.area_band_id",
+            "title = EXCLUDED.title",
+            "listing_url = EXCLUDED.listing_url",
+            "address_text = EXCLUDED.address_text",
+            "price_million_vnd = EXCLUDED.price_million_vnd",
+            "area_sqm = EXCLUDED.area_sqm",
+            "price_per_sqm_million = EXCLUDED.price_per_sqm_million",
+            "last_seen_at = GREATEST(fact_property_listing.last_seen_at, EXCLUDED.last_seen_at)",
+            "is_active = EXCLUDED.is_active",
+            "updated_at = CURRENT_TIMESTAMP",
+        ]
+        update_items.insert(8, "external_id = EXCLUDED.external_id")
+
+        insert_sql = sql.SQL(
+            """
+            INSERT INTO fact_property_listing ({fields})
+            VALUES %s
+            ON CONFLICT {target}
+            DO UPDATE SET {updates}
+            """
+        ).format(
+            fields=sql.SQL(", ").join(map(sql.Identifier, columns)),
+            target=sql.SQL(conflict_target),
+            updates=sql.SQL(", ").join(sql.SQL(i) for i in update_items),
+        )
+    else:
+        insert_sql = sql.SQL(
+            """
+            INSERT INTO fact_property_listing ({fields})
+            VALUES %s
+            ON CONFLICT DO NOTHING
+            """
+        ).format(fields=sql.SQL(", ").join(map(sql.Identifier, columns)))
+
     execute_values(pg.cursor, insert_sql.as_string(pg.connection), values)
     return len(values)
 
@@ -303,7 +394,7 @@ def prune_stale_source_rows(
     Guard: chỉ prune khi crawl thực sự có dữ liệu đáng kể,
     tránh xóa toàn bộ khi crawl bị lỗi/partial.
     """
-    if records_read == 0:
+    if records_read <= 0:
         logger.warning("Bỏ qua prune: records_read=0, crawl có thể đã lỗi")
         return 0
 

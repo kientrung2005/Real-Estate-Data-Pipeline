@@ -43,7 +43,7 @@ VALUES
     ('kho_xuong')
 ON CONFLICT (type_name) DO NOTHING;
 
--- 3.5. Seed quận/huyện Hà Nội (21 districts with coordinates)
+-- 3.5. Seed quận/huyện Hà Nội (22 districts with coordinates)
 INSERT INTO dim_district (district_name, city_name, district_type, latitude, longitude, alias_names)
 VALUES
     -- Central urban districts (10)
@@ -57,11 +57,9 @@ VALUES
     ('Long Bien', 'Ha Noi', 'quan', 21.0616, 105.8865, ARRAY['Long Bien', 'Quan Long Bien', 'Q. Long Bien', 'Q.Long Bien']::text[]),
     ('Nam Tu Liem', 'Ha Noi', 'quan', 21.0488, 105.7584, ARRAY['Nam Tu Liem', 'Quan Nam Tu Liem', 'Q. Nam Tu Liem', 'Q.Nam Tu Liem']::text[]),
     ('Bac Tu Liem', 'Ha Noi', 'quan', 21.0932, 105.7737, ARRAY['Bac Tu Liem', 'Quan Bac Tu Liem', 'Q. Bac Tu Liem', 'Q.Bac Tu Liem']::text[]),
-    -- Inner ring urban districts (3)
     ('Tay Ho', 'Ha Noi', 'quan', 21.0808, 105.8142, ARRAY['Tay Ho', 'Quan Tay Ho', 'Q. Tay Ho', 'Q.Tay Ho']::text[]),
     ('Dong Anh', 'Ha Noi', 'huyen', 21.1789, 105.9330, ARRAY['Dong Anh', 'Huyen Dong Anh', 'H. Dong Anh', 'H.Dong Anh']::text[]),
     ('Gia Lam', 'Ha Noi', 'huyen', 21.1493, 105.9757, ARRAY['Gia Lam', 'Huyen Gia Lam', 'H. Gia Lam', 'H.Gia Lam']::text[]),
-    -- Suburban areas (8)
     ('Thanh Tri', 'Ha Noi', 'huyen', 20.8860, 105.9140, ARRAY['Thanh Tri', 'Huyen Thanh Tri', 'H. Thanh Tri', 'H.Thanh Tri']::text[]),
     ('Son Tay', 'Ha Noi', 'thi_xa', 21.1050, 105.5380, ARRAY['Son Tay', 'Thi xa Son Tay', 'TX Son Tay', 'TX. Son Tay']::text[]),
     ('Quoc Oai', 'Ha Noi', 'huyen', 21.2120, 105.5450, ARRAY['Quoc Oai', 'Huyen Quoc Oai', 'H. Quoc Oai', 'H.Quoc Oai']::text[]),
@@ -69,7 +67,8 @@ VALUES
     ('Ha Dong', 'Ha Noi', 'huyen', 20.9620, 105.7660, ARRAY['Ha Dong', 'Huyen Ha Dong', 'H. Ha Dong', 'H.Ha Dong']::text[]),
     ('Chuong My', 'Ha Noi', 'huyen', 20.8580, 105.6660, ARRAY['Chuong My', 'Huyen Chuong My', 'H. Chuong My', 'H.Chuong My']::text[]),
     ('Thach That', 'Ha Noi', 'huyen', 21.3690, 105.7460, ARRAY['Thach That', 'Huyen Thach That', 'H. Thach That', 'H.Thach That']::text[]),
-    ('Dan Phuong', 'Ha Noi', 'huyen', 21.3250, 105.6950, ARRAY['Dan Phuong', 'Huyen Dan Phuong', 'H. Dan Phuong', 'H.Dan Phuong']::text[])
+    ('Dan Phuong', 'Ha Noi', 'huyen', 21.3250, 105.6950, ARRAY['Dan Phuong', 'Huyen Dan Phuong', 'H. Dan Phuong', 'H.Dan Phuong']::text[]),
+    ('Soc Son', 'Ha Noi', 'huyen', 21.5000, 105.9500, ARRAY['Soc Son', 'Huyen Soc Son', 'H. Soc Son', 'H.Soc Son']::text[])
 ON CONFLICT (district_name) DO NOTHING;
 
 -- 3.6. Seed bảng ngày cho khoảng +/- 5 năm

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 from urllib.parse import urlparse
 
 
@@ -395,7 +395,7 @@ def extract_admin_location_from_listing_url(url: Optional[object]) -> Dict[str, 
             "smart", "park", "by", "gia", "kita", "wonder", "palace", "apartment", "tower",
             "re", "tot", "mem", "gap", "ban", "cho", "thue", "chinh-chu", "gia-re", "gia-tot",
             "phuong", "xa", "quan", "huyen", "thi-xa", "thi-tran",
-            "hinode", "royal", "park", "nhat", "thi", "truong", "hon", "gia-mem",
+            "hinode", "royal", "park", "gia-mem",
         }
         kept: List[str] = []
         for token in tokens:
@@ -415,37 +415,43 @@ def extract_admin_location_from_listing_url(url: Optional[object]) -> Dict[str, 
             kept = kept[:max_tokens]
         return "-".join(kept)
 
-    def _extract(pattern: str, prefix: str, max_tokens: int = 3) -> Optional[str]:
-        match = re.search(pattern, search_text)
-        if not match:
+    def _extract_earliest(patterns: List[Tuple[str, str]], max_tokens: int = 3) -> Optional[str]:
+        matches = []
+        for pattern, prefix in patterns:
+            for match in re.finditer(pattern, search_text):
+                matches.append((match.start(), prefix, match.group(1).strip("-")))
+        if not matches:
             return None
-        raw_name = match.group(1).strip("-")
-        if not raw_name:
-            return None
-        sanitized = _sanitize_admin_slug_name(raw_name, max_tokens=max_tokens)
-        if not sanitized:
-            return None
-        pretty = _accentize_admin_name(sanitized.replace("-", " "))
-        if not pretty or len(pretty) < 2:
-            return None
-        # Loại bỏ các từ khóa rác hoặc từ khóa trùng với prefix
-        norm = normalize_text(pretty)
-        if norm in ("re", "tot", "mem", "gap", "ban", "cho", "thue", "gia re", "gia tot", "phuong", "xa", "quan", "huyen", "nhat", "thi truong"):
-            return None
-            
-        pretty = re.sub(r"\s+", " ", pretty).strip()
-        return f"{prefix} {pretty}"
+        matches.sort(key=lambda x: x[0])
+        
+        for _, prefix, raw_name in matches:
+            sanitized = _sanitize_admin_slug_name(raw_name, max_tokens=max_tokens)
+            if not sanitized:
+                continue
+            pretty = _accentize_admin_name(sanitized.replace("-", " "))
+            if not pretty or len(pretty) < 2:
+                continue
+            norm = normalize_text(pretty)
+            if norm in ("re", "tot", "mem", "gap", "ban", "cho", "thue", "gia re", "gia tot", "phuong", "xa", "quan", "huyen", "nhat", "thi truong"):
+                continue
+            pretty = re.sub(r"\s+", " ", pretty).strip()
+            return f"{prefix} {pretty}"
+        return None
+
     if "batdongsan.com.vn" in text:
-        result["district"] = _accentize_admin_name(
-            _extract(r"(?<![a-z0-9])quan-([a-z0-9-]+)", "Quận")
-            or _extract(r"(?<![a-z0-9])huyen-([a-z0-9-]+)", "Huyện")
-            or _extract(r"(?<![a-z0-9])thi-xa-([a-z0-9-]+)", "Thị xã")
-        )
-        result["ward"] = _accentize_admin_name(
-            _extract(r"(?<!dan)(?<!an)(?<![a-z0-9])phuong-([a-z0-9-]+)", "Phường")
-            or _extract(r"(?<![a-z0-9])xa-([a-z0-9-]+)", "Xã")
-            or _extract(r"(?<![a-z0-9])thi-tran-([a-z0-9-]+)", "Thị trấn")
-        )
+        district_patterns = [
+            (r"(?<![a-z0-9])quan-([a-z0-9-]+)", "Quận"),
+            (r"(?<![a-z0-9])huyen-([a-z0-9-]+)", "Huyện"),
+            (r"(?<![a-z0-9])thi-xa-([a-z0-9-]+)", "Thị xã")
+        ]
+        ward_patterns = [
+            (r"(?<!dan-)(?<!an-)(?<!song-)(?<!hai-)(?<![a-z0-9])phuong-([a-z0-9-]+)", "Phường"),
+            (r"(?<![a-z0-9])xa-([a-z0-9-]+)", "Xã"),
+            (r"(?<![a-z0-9])thi-tran-([a-z0-9-]+)", "Thị trấn")
+        ]
+        result["district"] = _accentize_admin_name(_extract_earliest(district_patterns) or "") or None
+        result["ward"] = _accentize_admin_name(_extract_earliest(ward_patterns) or "") or None
+
     return result
 
 

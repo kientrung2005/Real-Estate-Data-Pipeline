@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     listing_id BIGSERIAL PRIMARY KEY,
     run_id UUID REFERENCES etl_run_log(run_id),
     source_id SMALLINT NOT NULL REFERENCES dim_source(source_id),
+    external_id VARCHAR(50),
     district_id SMALLINT,
     type_id SMALLINT REFERENCES dim_property_type(type_id),
     date_key INT NOT NULL REFERENCES dim_date(date_key),
@@ -139,7 +140,7 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     CONSTRAINT fk_fact_property_district FOREIGN KEY (district_id)
         REFERENCES dim_district(district_id)
         ON DELETE SET NULL,
-    CONSTRAINT uq_fact_source_listing UNIQUE (source_id, listing_url)
+    CONSTRAINT uq_fact_source_listing UNIQUE (source_id, external_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_fact_date_district ON fact_property_listing(date_key, district_id);
