@@ -7,15 +7,15 @@ from src.crawl.bds_crawler import BDSCrawler
 from src.crawl.bds_transformer import build_bds_record
 from src.database.mongodb_repository import upsert_raw_listings_to_mongodb
 
-def crawl_bds_to_mongodb(pages: int = 1, fetch_detail: bool = True) -> int:
+def crawl_bds_to_mongodb(pages: int = 1, fetch_detail: bool = True, headless: bool = True) -> int:
     """Cào danh sách từ batdongsan.com.vn và upsert vào MongoDB."""
     print(f"Bắt đầu crawl Batdongsan.com.vn ({pages} trang)...")
     
     total_saved = 0
     seen_ad_ids = set()
     
-    # Trong Docker không có giao diện, bắt buộc phải dùng headless=True
-    crawler = BDSCrawler(headless=True)
+    # Khởi tạo crawler với tham số headless truyền vào
+    crawler = BDSCrawler(headless=headless)
     
     try:
         for page in range(1, pages + 1):

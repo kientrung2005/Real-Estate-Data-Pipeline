@@ -22,6 +22,7 @@ class BDSCrawler:
     page: Page
 
     def __init__(self, headless: bool = True) -> None:
+        self.headless = headless
         self.playwright = sync_playwright().start()
         
         # Tham số tàng hình để vượt mặt các cơ chế detection
@@ -106,11 +107,9 @@ class BDSCrawler:
         try:
             self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
             
-            # CHỐT CHẶN QUAN TRỌNG: Chờ tối đa 60s để bạn TỰ CLICK MÀN HÌNH CAPTCHA
-            if "Just a moment" in self.page.title() or "Cloudflare" in self.page.title():
-                print("Phát hiện Cloudflare! Bạn hãy click vào ô 'Verify you are human' trên trình duyệt, script sẽ tự động đợi...")
-            
-            self.page.wait_for_selector(".js__pr-description", timeout=60000)
+            # Đợi load nội dung. Trong Docker (headless) đợi 15s, chạy tay (headed) đợi 60s như cũ.
+            current_timeout = 15000 if self.headless else 60000
+            self.page.wait_for_selector(".js__pr-description", timeout=current_timeout)
             
             desc_el = self.page.query_selector(".re__section-body.re__detail-content.js__section-body.js__pr-description") or self.page.query_selector(".js__pr-description")
             description = desc_el.inner_text().strip() if desc_el else ""
@@ -241,10 +240,11 @@ class BDSCrawler:
         self.browser.close()
         self.playwright.stop()
 
-def crawl_bds_to_mongodb(pages: int = 3) -> int:
+def crawl_bds_to_mongodb(pages: int = 3, headless: bool = False) -> int:
     """Wrapper tương thích ngược, chuyển điều phối sang tầng pipeline."""
     from src.crawl.bds_pipeline import crawl_bds_to_mongodb as run_pipeline
-    return run_pipeline(pages=pages, fetch_detail=True)
+    return run_pipeline(pages=pages, fetch_detail=True, headless=headless)
 
 if __name__ == "__main__":
-    crawl_bds_to_mongodb(pages=3)
+    # Khi chạy tay, mặc định hiện trình duyệt để dễ xử lý Cloudflare
+    crawl_bds_to_mongodb(pages=3, headless=False)

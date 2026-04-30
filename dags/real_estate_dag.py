@@ -40,7 +40,7 @@ with DAG(
     crawl_bds_task = PythonOperator(
         task_id="crawl_bds_to_mongodb",
         python_callable=crawl_bds_to_mongodb,
-        op_kwargs={"pages": 1, "fetch_detail": True},
+        op_kwargs={"pages": 1, "fetch_detail": True, "headless": True},
     )
 
     # Task 3: Load Chợ Tốt từ MongoDB sang Postgres

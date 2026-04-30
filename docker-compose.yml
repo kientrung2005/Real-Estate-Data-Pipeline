@@ -40,6 +40,7 @@ services:
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./src:/opt/airflow/src
+      - ./sql:/opt/airflow/sql
     networks:
       - real_estate_network
     # Tự động init database + tạo user admin lần đầu chạy
@@ -66,6 +67,7 @@ services:
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./src:/opt/airflow/src
+      - ./sql:/opt/airflow/sql
     networks:
       - real_estate_network
     command: airflow scheduler

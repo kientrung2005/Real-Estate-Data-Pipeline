@@ -12,6 +12,7 @@ from src.database.address_cleaner import (
     infer_district_type,
     normalize_text,
     title_case_from_normalized,
+    _accentize_admin_name,
 )
 from src.database.postgres_connect import PostgreSQLConnect
 
@@ -134,8 +135,9 @@ def prepare_district_seed_rows(docs: Sequence[Dict[str, Any]]) -> List[Tuple[str
         if not district_key or district_key in seen:
             continue
         seen.add(district_key)
-        city_name = "Ha Noi"
-        district_name = title_case_from_normalized(district_key)
+        city_name = "Hà Nội"
+        # Dùng _accentize_admin_name để có dấu tiếng Việt chuẩn cho tên Quận
+        district_name = _accentize_admin_name(district_key) or title_case_from_normalized(district_key)
         d_type = infer_district_type(doc.get("district"))
         aliases = district_alias_names(district_name, d_type)
         rows.append((district_name, city_name, d_type, aliases))

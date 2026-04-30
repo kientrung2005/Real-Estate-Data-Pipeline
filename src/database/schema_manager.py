@@ -140,10 +140,9 @@ def ensure_postgres_schema(pg: PostgreSQLConnect) -> None:
 
     _ensure_alias_schema(pg)
 
-    # ward_id không còn dùng trong fact table vì chất lượng trích xuất ward không ổn định.
-    if _table_exists(cursor, "fact_property_listing") and _column_exists(cursor, "fact_property_listing", "ward_id"):
-        cursor.execute("DROP INDEX IF EXISTS idx_fact_district_ward")
-        cursor.execute("ALTER TABLE fact_property_listing DROP COLUMN ward_id")
+    # Đảm bảo có cột ward_name để lưu tên Phường/Xã chuẩn
+    if _table_exists(cursor, "fact_property_listing") and not _column_exists(cursor, "fact_property_listing", "ward_name"):
+        cursor.execute("ALTER TABLE fact_property_listing ADD COLUMN ward_name VARCHAR(120)")
 
     # Đảm bảo tất cả property types đều tồn tại (bao gồm cả types mới thêm)
     for type_name in ('khac', 'phong_tro', 'mat_bang', 'kho_xuong'):

@@ -188,6 +188,118 @@ ADMIN_ACCENT_MAP = {
     "ngoc hoi": "Ngọc Hồi",
     "duong": "Dương Xá",
     "thach": "Thạch Bàn",
+    "tay tuu": "Tây Tựu",
+    "dong ngac": "Đông Ngạc",
+    "duc thang": "Đức Thắng",
+    "lien mac": "Liên Mạc",
+    "thuong cat": "Thượng Cát",
+    "thuy phuong": "Thụy Phương",
+    "xuan tao": "Xuân Tảo",
+    "dong xuan": "Đồng Xuân",
+    "hang bac": "Hàng Bạc",
+    "hang dao": "Hàng Đào",
+    "hang ma": "Hàng Mã",
+    "hang trong": "Hàng Trống",
+    "trang tien": "Tràng Tiền",
+    "cua nam": "Cửa Nam",
+    "cua dong": "Cửa Đông",
+    "ly thai to": "Lý Thái Tổ",
+    "phan chu trinh": "Phan Chu Trinh",
+    "tran hung dao": "Trần Hưng Đạo",
+    "giap nhi": "Giáp Nhị",
+    "den lu": "Đền Lừ",
+    # Ba Đình
+    "thanh cong": "Thành Công",
+    "dien bien": "Điện Biên",
+    "vinh phuc": "Vĩnh Phúc",
+    "phuc xa": "Phúc Xá",
+    "nguyen trung truc": "Nguyễn Trung Trực",
+    "giang vo": "Giảng Võ",
+    "kim ma": "Kim Mã",
+    "lieu giai": "Liễu Giai",
+    "ngoc ha": "Ngọc Hà",
+    "ngoc khanh": "Ngọc Khánh",
+    "quan thanh": "Quán Thánh",
+    "truc bach": "Trúc Bạch",
+    "doi can": "Đội Cấn",
+    "cong vi": "Cống Vị",
+    "kim ma": "Kim Mã",
+    "lieu giai": "Liễu Giai",
+    "ngoc ha": "Ngọc Hà",
+    # Tây Hồ (đã có một số ở trên, bổ sung nốt)
+    "quang an": "Quảng An",
+    "tu lien": "Tứ Liên",
+    "buoi": "Bưởi",
+    "thuy khue": "Thụy Khuê",
+    "xuan la": "Xuân La",
+    "yen phu": "Yên Phụ",
+    "nhat tan": "Nhật Tân",
+    "phu thuong": "Phú Thượng",
+    # Hoàng Mai
+    "giap bat": "Giáp Bát",
+    "tan mai": "Tân Mai",
+    "tuong mai": "Tương Mai",
+    "hoang liet": "Hoàng Liệt",
+    "thinh liet": "Thịnh Liệt",
+    "dai kim": "Đại Kim",
+    "dinh cong": "Định Công",
+    "vinh hung": "Vĩnh Hưng",
+    "linh nam": "Lĩnh Nam",
+    "tran phu": "Trần Phú",
+    "yen so": "Yên Sở",
+    "mai dong": "Mai Động",
+    "thanh tri": "Thanh Trì",
+    "hoang van thu": "Hoàng Văn Thụ",
+    "me linh": "Mê Linh",
+    "soc son": "Sóc Sơn",
+    "thuong tin": "Thường Tín",
+    "thanh oai": "Thanh Oai",
+    "phu xuyen": "Phú Xuyên",
+    "ung hoa": "Ứng Hòa",
+    "my duc": "Mỹ Đức",
+    "ba vi": "Ba Vì",
+    "phuc tho": "Phúc Thọ",
+}
+
+# Map để kiểm tra phường thuộc quận nào (dùng để validate tránh râu ông nọ cắm cằm bà kia)
+WARD_DISTRICT_MAP = {
+    "Ba Đình": {
+        "thanh cong", "dien bien", "vinh phuc", "phuc xa", "nguyen trung truc",
+        "giang vo", "kim ma", "lieu giai", "ngoc ha", "ngoc khanh", "quan thanh",
+        "truc bach", "doi can", "cong vi"
+    },
+    "Tây Hồ": {
+        "quang an", "tu lien", "buoi", "thuy khue", "xuan la", "yen phu", "nhat tan", "phu thuong"
+    },
+    "Hoàng Mai": {
+        "giap bat", "tan mai", "tuong mai", "hoang liet", "thinh liet", "dai kim",
+        "dinh cong", "vinh hung", "linh nam", "tran phu", "yen so", "mai dong",
+        "thanh tri", "hoang van thu"
+    },
+    "Nam Từ Liêm": {
+        "my dinh 1", "my dinh 2", "me tri", "phu do", "tay mo", "dai mo", "trung van", "xuan phuong", "phuong canh", "cau dien"
+    },
+    "Bắc Từ Liêm": {
+        "co nhue 1", "co nhue 2", "dong ngac", "duc thang", "lien mac", "minh khai", "phu dien", "phuc dien", "tay tuu", "thuong cat", "thuy phuong", "xuan dinh", "xuan tao"
+    },
+    "Cầu Giấy": {
+        "dich vong", "dich vong hau", "mai dich", "nghia do", "nghia tan", "quan hoa", "trung hoa", "yen hoa"
+    },
+    "Đống Đa": {
+        "cat linh", "hang bot", "kham thien", "kim lien", "lang ha", "lang thuong", "nam dong", "ngoc khanh", "o cho dua", "phuong lien", "phuong mai", "quang trung", "quoc tu giam", "thanh quang", "tho quan", "trung liet", "trung phung", "trung tu", "van chuong", "van mieu"
+    },
+    "Gia Lâm": {
+        "trau quy", "duong xa", "da ton", "kiieu kỵ", "bat trang", "yen vien"
+    },
+    "Đông Anh": {
+        "uy no", "xuan non", "kim chung", "vinh ngoc", "hai boi", "dong anh"
+    },
+    "Đan Phượng": {
+        "tan hoi", "tan lap", "dan phuong", "phung"
+    },
+    "Hoài Đức": {
+        "di trach", "tram troi", "an khanh", "an thuong", "la phu"
+    }
 }
 
 
@@ -322,7 +434,12 @@ def _accentize_known_segment(segment: str) -> str:
     rest = text
     match = re.match(r"^(Quận|Huyện|Thị xã|Thị trấn|Phường|Xã|Quan|Huyen|Thi xa|Thi tran|Phuong|Xa)\b\s*", text, flags=re.IGNORECASE)
     if match:
-        prefix = match.group(1).capitalize()
+        raw_prefix = match.group(1).lower()
+        prefix_map = {
+            "quan": "Quận", "huyen": "Huyện", "thi xa": "Thị xã",
+            "thi tran": "Thị trấn", "phuong": "Phường", "xa": "Xã"
+        }
+        prefix = prefix_map.get(raw_prefix, raw_prefix.capitalize())
         rest = text[len(match.group(0)):]
     
     key = normalize_text(rest)
@@ -331,7 +448,16 @@ def _accentize_known_segment(segment: str) -> str:
         
     # Ưu tiên check toàn bộ chuỗi trước
     if key in ADMIN_ACCENT_MAP:
-        return f"{prefix} {ADMIN_ACCENT_MAP[key]}" if prefix else ADMIN_ACCENT_MAP[key]
+        pretty_name = ADMIN_ACCENT_MAP[key]
+        if not prefix:
+            # Tự động suy luận prefix nếu thiếu
+            d_type = infer_district_type(key)
+            if d_type:
+                prefix = "Quận" if d_type == "quan" else ("Huyện" if d_type == "huyen" else "Thị xã")
+            elif len(key.split()) <= 3: # Giả định là Phường nếu không phải Quận
+                prefix = "Xã" if key in {"kiieu ky", "tan hoi", "duong xa", "di trach", "uy no", "xuan non", "da ton"} else "Phường"
+        
+        return f"{prefix} {pretty_name}" if prefix else pretty_name
     
     # Nếu không khớp hoàn toàn, thử bỏ bớt các từ ở cuối (để xử lý "Di Trach Hinode" -> "Di Trạch")
     # Chỉ áp dụng nếu có prefix (Xã/Phường) để tránh cắt nhầm tên đường
@@ -439,18 +565,21 @@ def extract_admin_location_from_listing_url(url: Optional[object]) -> Dict[str, 
         return None
 
     if "batdongsan.com.vn" in text:
+        # Sửa regex để tránh bắt nhầm 'quan' trong 'lac-long-quan'
         district_patterns = [
-            (r"(?<![a-z0-9])quan-([a-z0-9-]+)", "Quận"),
+            (r"(?<!lac-long-)(?<!minh-)(?<![a-z0-9])quan-([a-z0-9-]+)", "Quận"),
             (r"(?<![a-z0-9])huyen-([a-z0-9-]+)", "Huyện"),
             (r"(?<![a-z0-9])thi-xa-([a-z0-9-]+)", "Thị xã")
         ]
         ward_patterns = [
-            (r"(?<!dan-)(?<!an-)(?<!song-)(?<!hai-)(?<![a-z0-9])phuong-([a-z0-9-]+)", "Phường"),
-            (r"(?<![a-z0-9])xa-([a-z0-9-]+)", "Xã"),
-            (r"(?<![a-z0-9])thi-tran-([a-z0-9-]+)", "Thị trấn")
+            (r"\bphuong-([a-z0-9-]+)", "Phường"),
+            (r"\bxa-([a-z0-9-]+)", "Xã"),
+            (r"\bthi-tran-([a-z0-9-]+)", "Thị trấn")
         ]
-        result["district"] = _accentize_admin_name(_extract_earliest(district_patterns) or "") or None
-        result["ward"] = _accentize_admin_name(_extract_earliest(ward_patterns) or "") or None
+        
+        # Chỉ lấy kết quả trực tiếp từ _extract_earliest (vì hàm này đã tự thêm dấu rồi)
+        result["district"] = _extract_earliest(district_patterns, max_tokens=2)
+        result["ward"] = _extract_earliest(ward_patterns, max_tokens=3)
 
     return result
 
@@ -488,6 +617,22 @@ def clean_address_text(
             return 2
         if re.match(r"^(phường|xã|thị trấn|phuong|xa|thi tran)\b", part, flags=re.IGNORECASE):
             return 1
+        
+        # Bổ sung: Nếu tên nằm trong ADMIN_ACCENT_MAP
+        if p_lower in ADMIN_ACCENT_MAP:
+            # Danh sách các quận/huyện
+            districts = {
+                "tay ho", "nam tu liem", "bac tu liem", "ha dong", "dong anh", 
+                "dan phuong", "hoai duc", "gia lam", "cau giay", "dong da", 
+                "hoang mai", "thanh xuan", "hai ba trung", "long bien", 
+                "ba dinh", "hoan kiem", "thanh tri", "son tay", "quoc oai", 
+                "chuong my", "thach that"
+            }
+            if p_lower in districts:
+                return 2  # Nó là Quận (Level 2)
+            else:
+                return 1  # Nó là Phường (Level 1)
+                
         return 0
 
     if text:

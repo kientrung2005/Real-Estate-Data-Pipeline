@@ -183,18 +183,64 @@ def build_fact_row(
                     resolved_district_name = district_key
                     break
 
+    full_address = clean_address_text(raw["address"], raw["ward"], resolved_district_name, raw["city"], raw["source_url"])
+    address_parts = [p.strip() for p in (full_address or "").split(",") if p.strip()]
+    extracted_ward = address_parts[0] if len(address_parts) >= 3 else None
+
+    # Bổ sung: Nếu vẫn chưa tìm thấy Phường, hãy thử lùng sục trong Tiêu đề và Mô tả
+    if not extracted_ward:
+        search_text_full = normalize_text(" ".join(filter(None, [
+            raw.get("title", ""),
+            raw.get("description", ""),
+            raw.get("address", "")
+        ])))
+        # Danh sách các quận để tránh nhận diện nhầm quận thành phường
+        districts_slugs = {
+            "tay ho", "nam tu liem", "bac tu liem", "ha dong", "dong anh", 
+            "dan phuong", "hoai duc", "gia lam", "cau giay", "dong da", 
+            "hoang mai", "thanh xuan", "hai ba trung", "long bien", 
+            "ba dinh", "hoan kiem", "thanh tri", "son tay", "quoc oai", 
+            "chuong my", "thach that"
+        }
+        
+        from src.database.address_cleaner import ADMIN_ACCENT_MAP
+        # Sắp xếp từ điển theo độ dài slug giảm dần để ưu tiên các tên dài (tránh bắt trúng từ ngắn trong từ dài)
+        sorted_items = sorted(ADMIN_ACCENT_MAP.items(), key=lambda x: len(x[0]), reverse=True)
+        
+        for slug, pretty_name in sorted_items:
+            # Chỉ tìm nếu slug xuất hiện như một từ độc lập và có độ dài hợp lý
+            if re.search(rf"\b{re.escape(slug)}\b", search_text_full) and slug not in districts_slugs and len(slug) > 3:
+                # KIỂM TRA TÍNH HỢP LỆ: Phường phải thuộc Quận (nếu có thông tin quận)
+                from src.database.address_cleaner import WARD_DISTRICT_MAP
+                # Làm sạch tên quận để khớp với Map (bỏ chữ Quận/Huyện)
+                d_name_clean = re.sub(r"^(Quận|Huyện|Thị xã)\s+", "", resolved_district_name or "").strip()
+                
+                if d_name_clean in WARD_DISTRICT_MAP:
+                    if slug not in WARD_DISTRICT_MAP[d_name_clean]:
+                        continue # Phường này không thuộc quận này, bỏ qua
+                
+                # Thêm tiền tố Phường/Xã cho chuẩn
+                prefix = "Xã" if slug in {"tan hoi", "duong xa", "di trach", "uy no", "xuan non"} else "Phường"
+                extracted_ward = f"{prefix} {pretty_name}"
+                
+                # Cập nhật luôn vào địa chỉ đầy đủ để hiển thị cho đẹp
+                if full_address and pretty_name not in full_address:
+                    full_address = f"{extracted_ward}, {full_address}"
+                break
+
     fact_row = {
         "run_id": None,
         "source_id": source_id,
         "external_id": external_id,
         "district_id": district_id,
+        "ward_name": extracted_ward,
         "type_id": resolve_property_type(raw["property_type"], dim_maps["property_type"]),
         "date_key": date_key,
         "price_band_id": resolve_price_band(price_million, dim_maps["price_band"]),
         "area_band_id": resolve_area_band(area_sqm_val, dim_maps["area_band"]),
         "title": raw["title"],
         "listing_url": raw["source_url"],
-        "address_text": clean_address_text(raw["address"], raw["ward"], resolved_district_name, raw["city"], raw["source_url"]),
+        "address_text": full_address,
         "price_million_vnd": price_million,
         "area_sqm": area_sqm_val,
         "price_per_sqm_million": _price_per_sqm_million(price_million, area_sqm_val),
@@ -219,8 +265,7 @@ def build_fact_row(
         (r"thanh-cong-the", "thanh-cong-the in URL (OCR - truncation slug)"),
         # User-reported lỗi từ crawlers
         (r"(?:Phuong|Phường)\s+Chi\b", "Phường Chi (truncation - Đan Phượng)"),
-        (r"(?:Phuong|Phường)\s+Vien\b", "Phường Vien (truncation - Hoài Đức)"),
-        (r"Quan\s+Hoang\s+Mai\b", "Quận Hoàng Mai (incomplete address - missing ward)"),
+        (r"Phuong\s+Vien\b", "Phường Vien (truncation - Hoài Đức)"),
     ]
 
     for pattern, reason in ocr_patterns:
@@ -252,7 +297,7 @@ def upsert_fact_rows(pg: PostgreSQLConnect, rows: Sequence[Dict[str, Any]]) -> i
     existing_cols = {r[0] for r in pg.cursor.fetchall()}
 
     columns = ["run_id", "source_id", "external_id", 
-        "district_id", "type_id", "date_key",
+        "district_id", "ward_name", "type_id", "date_key",
         "price_band_id", "area_band_id", "title", "listing_url",
         "address_text", "price_million_vnd", "area_sqm",
         "price_per_sqm_million", "first_seen_at", "last_seen_at", "is_active",
@@ -292,6 +337,7 @@ def upsert_fact_rows(pg: PostgreSQLConnect, rows: Sequence[Dict[str, Any]]) -> i
         update_items = [
             "run_id = EXCLUDED.run_id",
             "district_id = EXCLUDED.district_id",
+            "ward_name = EXCLUDED.ward_name",
             "type_id = EXCLUDED.type_id",
             "date_key = EXCLUDED.date_key",
             "price_band_id = EXCLUDED.price_band_id",
