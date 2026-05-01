@@ -33,6 +33,8 @@ services:
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW_HOME: /opt/airflow
+      PYTHONPATH: /opt/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'this_is_a_very_secret_key_12345'
     ports:
       - "8080:8080"
     volumes:
@@ -41,10 +43,12 @@ services:
       - ./config:/opt/airflow/config
       - ./src:/opt/airflow/src
       - ./sql:/opt/airflow/sql
+      - ./browser_profile:/opt/airflow/browser_profile
+      - ./browser_profile_firefox:/opt/airflow/browser_profile_firefox
     networks:
       - real_estate_network
-    # Tự động init database + tạo user admin lần đầu chạy
-    command: bash -c "airflow db init && airflow users create --username admin --password admin123 --firstname Admin --lastname User --role Admin --email admin@airflow.local 2>/dev/null || true && airflow webserver"
+    # Đợi postgres sẵn sàng rồi mới init và chạy webserver
+    command: bash -c "sleep 10 && airflow db init && airflow users create --username admin --password admin123 --firstname Admin --lastname User --role Admin --email admin@airflow.local 2>/dev/null || true && airflow webserver"
 
   #Thêm Airflow Scheduler
   airflow-scheduler:
@@ -62,12 +66,15 @@ services:
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW_HOME: /opt/airflow
+      PYTHONPATH: /opt/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'this_is_a_very_secret_key_12345'
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./config:/opt/airflow/config
       - ./src:/opt/airflow/src
       - ./sql:/opt/airflow/sql
+      - ./browser_profile:/opt/airflow/browser_profile
     networks:
       - real_estate_network
     command: airflow scheduler

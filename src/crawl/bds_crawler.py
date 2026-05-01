@@ -3,12 +3,13 @@ from pathlib import Path
 import time
 import random
 import re
+import os
 from typing import Dict, Optional
 import pandas as pd
 from playwright.sync_api import sync_playwright, Route, Playwright, Browser, BrowserContext, Page
 from playwright_stealth import Stealth
 
-# Cho phép chạy trực tiếp file: python src/crawl/bds_crawler.py
+# Cho phép chạy trực tiếp file
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -21,41 +22,83 @@ class BDSCrawler:
     context: BrowserContext
     page: Page
 
-    def __init__(self, headless: bool = True) -> None:
+    def __init__(self, headless: bool = True, user_data_dir: Optional[str] = None) -> None:
         self.headless = headless
         self.playwright = sync_playwright().start()
         
-        # Tham số tàng hình để vượt mặt các cơ chế detection
-        args = [
-            "--disable-blink-features=AutomationControlled",
-        ]
+        # Thu muc luu du lieu trinh duyet
+        base_dir = "/opt/airflow" if os.path.exists("/opt/airflow") else os.getcwd()
+        if not user_data_dir:
+            user_data_dir = os.path.join(base_dir, "browser_profile")
+        elif not os.path.isabs(user_data_dir):
+            user_data_dir = os.path.join(base_dir, user_data_dir)
         
-        self.browser = self.playwright.chromium.launch(headless=headless, args=args)
-        self.context = self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            viewport={"width": 1366, "height": 768}
+        # Khởi tạo Chromium với Stealth mode
+        self.context = self.playwright.chromium.launch_persistent_context(
+            user_data_dir,
+            headless=headless,
+            viewport={'width': 1920, 'height': 1080},
+            ignore_https_errors=True,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-infobars",
+                "--disable-notifications",
+            ]
         )
-        self.page = self.context.new_page()
         
-        # Tiêm mã tàng hình của playwright_stealth (chuẩn v2)
+        self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
+        self.page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => false})")
+        
+        print(f"BDSCrawler initialized (headless={headless}, persistent=True)", flush=True)
         Stealth().apply_stealth_sync(self.page)
-        
-        # Chặn load tài nguyên thừa (ảnh, css, font) để tối ưu tốc độ
-        self.page.route("**/*", self._intercept_route)
 
-    def _intercept_route(self, route: Route) -> None:
-        resource_type = route.request.resource_type
-        # Tạm thời bỏ stylesheet ra khỏi blacklist vì CSS cần để hiển thị nút liên hệ
-        if resource_type in ["image", "media", "font"]:
-            route.abort()
-        else:
-            route.continue_()
+    def _handle_cloudflare(self):
+        """San va click Cloudflare Turnstile neu xuat hien."""
+        # Kiem tra nhanh xem co Cloudflare khong
+        content = self.page.content()
+        if "cloudflare" not in content.lower() and "challenge" not in content.lower() and "verify you are human" not in content.lower():
+            return False
+
+        print("[SHADOW] Phat hien Cloudflare, dang tu dong xu ly...", flush=True)
+        for i in range(10): 
+            try:
+                for frame in self.page.frames:
+                    if "cloudflare" in frame.url or "challenge" in frame.url or "turnstile" in frame.url:
+                        for selector in ['#challenge-stage', 'input[type="checkbox"]', '.ctp-checkbox-label']:
+                            target = frame.locator(selector)
+                            if target.count() > 0:
+                                print(f"[SHADOW] Click Turnstile thanh cong!", flush=True)
+                                target.click()
+                                time.sleep(5)
+                                return True
+                
+                if i == 5: # Chiêu cuối nếu sau 10s vẫn kẹt
+                    self.page.mouse.click(300, 310) 
+                    time.sleep(3)
+            except Exception: pass
+            time.sleep(2)
+        return False
 
     def get_listing_urls(self, page_num: int = 1) -> Optional[pd.DataFrame]:
         url = f"{BASE_URL}/p{page_num}" if page_num > 1 else BASE_URL
         try:
-            self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            self.page.wait_for_selector(".js__card", timeout=15000)
+            print(f"[Listing] Dang truy cap: {url}", flush=True)
+            self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            
+            self._handle_cloudflare()
+            
+            try:
+                self.page.wait_for_selector(".js__card", timeout=20000)
+            except Exception:
+                log_dir = "/opt/airflow/logs" if os.path.exists("/opt/airflow") else "logs"
+                if not os.path.exists(log_dir): os.makedirs(log_dir, exist_ok=True)
+                path = os.path.join(log_dir, f"error_list_{int(time.time())}.png")
+                self.page.screenshot(path=path)
+                print(f"[DEBUG] Khong thay tin rao. Anh loi: {path}", flush=True)
+                raise
             
             listings = self.page.query_selector_all(".js__card")
             data = []
@@ -63,7 +106,6 @@ class BDSCrawler:
                 link_el = item.query_selector("a.js__product-link-for-product-id")
                 href = link_el.get_attribute("href") if link_el else ""
                 full_link = f"https://batdongsan.com.vn{href}" if href and href.startswith("/") else href
-                
                 ad_id = item.get_attribute("prid") or (href.split("-pr")[-1] if href else "")
                 
                 title_el = item.query_selector(".js__card-title")
@@ -71,180 +113,68 @@ class BDSCrawler:
                 area_el = item.query_selector(".re__card-config-area")
                 location_el = item.query_selector(".re__card-location")
                 
-                # Fetch images
-                img_els = item.query_selector_all("img")
-                images = []
-                for img in img_els:
-                    src = img.get_attribute("data-src") or img.get_attribute("src")
-                    if src and src.startswith("http"):
-                        images.append(src)
-                
                 data.append({
                     "ad_id": ad_id,
                     "url": full_link,
                     "title": title_el.inner_text().strip() if title_el else "",
                     "price": price_el.inner_text().strip() if price_el else "",
                     "area": area_el.inner_text().strip() if area_el else "",
-                    "address": location_el.inner_text().strip() if location_el else "",
-                    "images": list(set(images))
+                    "address": location_el.inner_text().strip() if location_el else ""
                 })
             
-            if not data:
-                return pd.DataFrame()
-                
-            return pd.DataFrame(data)
-            
+            return pd.DataFrame(data) if data else pd.DataFrame()
         except Exception as e:
-            print(f"Lỗi khi cào list page {page_num}: {e}")
+            print(f"Loi listing page {page_num}: {e}", flush=True)
             return None
 
     def get_property_detail(self, url: str) -> Optional[Dict]:
-        """Truy cập trang chi tiết để lấy thêm thông tin."""
-        if not url:
-            return None
-            
-        time.sleep(random.uniform(1.5, 3.0))
+        if not url: return None
+        # Nghỉ ngẫu nhiên để tránh bot detection
+        time.sleep(random.uniform(3.0, 7.0))
         try:
             self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            self._handle_cloudflare()
             
-            # Đợi load nội dung. Trong Docker (headless) đợi 15s, chạy tay (headed) đợi 60s như cũ.
-            current_timeout = 15000 if self.headless else 60000
-            self.page.wait_for_selector(".js__pr-description", timeout=current_timeout)
-            
-            desc_el = self.page.query_selector(".re__section-body.re__detail-content.js__section-body.js__pr-description") or self.page.query_selector(".js__pr-description")
-            description = desc_el.inner_text().strip() if desc_el else ""
-            
-            attributes = {}
-            specsList = self.page.query_selector_all(".re__pr-specs-content-item")
-            for spec in specsList:
-                title = spec.query_selector(".re__pr-specs-content-item-title")
-                val = spec.query_selector(".re__pr-specs-content-item-value")
-                if title and val:
-                    attributes[title.inner_text().strip()] = val.inner_text().strip()
-            
-            contact_name_el = self.page.query_selector(".re__contact-name") or self.page.query_selector(".js__pr-contact-name")
-            contact_name = contact_name_el.inner_text().strip() if contact_name_el else ""
-            if not contact_name:
-                alt_name = self.page.query_selector(".re__contact-title")
-                contact_name = alt_name.get_attribute("title") if alt_name else ""
-
-            # ----------------------------------------------------------------
-            # Lấy địa chỉ từ trang detail — ưu tiên dòng chính, bỏ phần chú
-            # thích hành chính mới trong ngoặc đơn.
-            # ----------------------------------------------------------------
-            address_detail = ""
-
-            # Selector theo thứ tự ưu tiên — thử từng cái, lấy cái đầu tiên có nội dung.
-            ADDRESS_SELECTORS = [
-                # Dòng địa chỉ ngắn nằm dưới tiêu đề (thường đầy đủ nhất: Dự án, Xã, Huyện)
-                ".re__pr-short-info-item.js__pr-address .re__pr-short-info-item-value",
-                ".re__pr-short-info-item.js__pr-address",
-                # Breadcrumb: Bán / Hà Nội / Huyện Đan Phượng / Nhà biệt thự...
-                # → lấy phần [1] (Hà Nội) đến [-2] (tên huyện) để ghép thành chuỗi
-                ".js__pr-address",
-                ".re__pr-short-info-item--address",
-            ]
-
-            for sel in ADDRESS_SELECTORS:
-                addr_el = self.page.query_selector(sel)
-                if not addr_el:
-                    continue
-                raw_value = addr_el.inner_text().strip()
-                if not raw_value:
-                    continue
-                # Flatten xuống 1 dòng, xóa ký tự rác đầu chuỗi
-                cleaned = re.sub(r"[\r\n]+", ", ", raw_value)
-                cleaned = re.sub(r"\s+", " ", cleaned).strip()
-                cleaned = re.sub(r"^[·•\s.,;:\-_|/\\]+", "", cleaned).strip()
-                # Bỏ phần chú thích địa chỉ mới trong ngoặc: (Xã Ô Diên, Hà Nội mới)
-                cleaned = re.sub(r"\s*\([^)]*\)", "", cleaned).strip()
-                cleaned = re.sub(r",\s*,", ",", cleaned).strip().strip(",").strip()
-                if cleaned:
-                    address_detail = cleaned
-                    break
-
-            # Fallback: ghép từ các span con nếu selector trên miss
-            if not address_detail:
-                spans = self.page.query_selector_all(".js__pr-address span, .re__pr-short-info-item.js__pr-address span")
-                chunks = [s.inner_text().strip() for s in spans if s.inner_text().strip()]
-                if chunks:
-                    joined = ", ".join(chunks)
-                    joined = re.sub(r"\s*\([^)]*\)", "", joined).strip()
-                    address_detail = re.sub(r",\s*,", ",", joined).strip().strip(",")
-
-            # ----------------------------------------------------------------
-            # Lấy quận/huyện từ breadcrumb — nguồn đáng tin cậy nhất vì BDS
-            # luôn render breadcrumb: Bán > Hà Nội > Huyện Đan Phượng > ...
-            # ----------------------------------------------------------------
-            detail_district = ""
             try:
-                breadcrumb_els = self.page.query_selector_all(".re__breadcrumb a, .re__breadcrumb span")
-                # Lấy phần tử thứ 3 (index 2): thường là Quận/Huyện
-                if len(breadcrumb_els) >= 3:
-                    raw_bc = breadcrumb_els[2].inner_text().strip()
-                    # Bỏ prefix "Quận"/"Huyện" để lưu tên thuần
-                    detail_district = re.sub(r"^(Quận|Huyện|Thị xã)\s+", "", raw_bc, flags=re.IGNORECASE).strip()
-            except Exception:
-                detail_district = ""
+                self.page.wait_for_selector(".js__pr-description", timeout=20000)
+            except Exception: return None
             
-            # Cào Số Điện Thoại - Giải pháp Tối Thuận: Click và quét toàn vùng Text bằng Text Regex (bỏ qua DOM complex)
+            desc_el = self.page.query_selector(".js__pr-description")
+            description = desc_el.inner_text().strip() if desc_el else ""
+            contact_name_el = self.page.query_selector(".re__contact-name")
+            contact_name = contact_name_el.inner_text().strip() if contact_name_el else ""
+            
             contact_phone = ""
             try:
-                # 1. Bấm nút để gọi API hiển thị số (Batdongsan vừa đổi class sang js__btn-tracking)
-                phone_btn = self.page.query_selector(".js__btn-tracking, .re__btn.js__pr-phone, .js__btn-phone, .re__contact-phone, [data-microtip-label*='hiện số']")
+                phone_btn = self.page.query_selector(".js__btn-tracking, .re__contact-phone")
                 if phone_btn:
-                    try:
-                        phone_btn.click(timeout=3000, force=True)
-                        self.page.wait_for_timeout(2000) # Cho API 2 giây trả số về màn hình
-                    except Exception:
-                        pass
-                
-                # 2. Rút thô toàn bộ văn bản hiển thị trên trang
+                    phone_btn.click(force=True)
+                    time.sleep(1.5)
                 body_text = self.page.locator("body").inner_text()
-                
-                # Biến "090 456 789" hoặc "090.456.789" thành "090456789"
                 clean_body = body_text.replace(" ", "").replace(".", "").replace("-", "")
-                
-                # 3. Dùng Regex săn số điện thoại di động VN chuẩn (03, 05, 07, 08, 09 kèm 8 số)
-                matched_phones = re.findall(r'(0[35789][0-9]{8})', clean_body)
-                
-                if matched_phones:
-                    # Lấy số đầu tiên tìm thấy (thường là số trên banner nổi bật hoặc box liên hệ)
-                    contact_phone = matched_phones[0]
-                else:
-                    # Rộng mở điều kiện quét các số bị che giấu: vd '0973357***' hoặc '090xxxx'
-                    masked = re.findall(r'(0[35789][0-9]{4,8}\*{2,5})', clean_body.replace("x", "*").replace("X", "*"))
-                    if masked:
-                        # Tự động gọt giũa và pad dải sao cho đủ 10 ký tự như ChoTot
-                        digits = "".join(c for c in masked[0] if c.isdigit())
-                        contact_phone = digits.ljust(10, "*")[:10]
-
-            except Exception as e:
-                print(f"Lỗi extract SDT: {e}")
+                matched = re.findall(r'(0[35789][0-9]{8})', clean_body)
+                if matched: contact_phone = matched[0]
+            except Exception: pass
             
             return {
                 "source_url": url,
                 "description": description,
-                "attributes": attributes,
                 "contact_name": contact_name,
-                "contact_phone": contact_phone,
-                "address": address_detail,
-                "district": detail_district,
+                "contact_phone": contact_phone
             }
         except Exception as e:
-            print(f"Lỗi truy cập trang chi tiết {url}: {e}")
+            print(f"Loi chi tiet {url}: {e}", flush=True)
             return None
             
     def close(self):
-        self.context.close()
-        self.browser.close()
-        self.playwright.stop()
+        if hasattr(self, 'context'): self.context.close()
+        if hasattr(self, 'playwright'): self.playwright.stop()
 
-def crawl_bds_to_mongodb(pages: int = 3, headless: bool = False) -> int:
-    """Wrapper tương thích ngược, chuyển điều phối sang tầng pipeline."""
+def crawl_bds_to_mongodb(pages: int = 3, headless: bool = False, user_data_dir: str = None) -> int:
     from src.crawl.bds_pipeline import crawl_bds_to_mongodb as run_pipeline
-    return run_pipeline(pages=pages, fetch_detail=True, headless=headless)
+    return run_pipeline(pages=pages, fetch_detail=True, headless=headless, user_data_dir=user_data_dir)
 
 if __name__ == "__main__":
-    # Khi chạy tay, mặc định hiện trình duyệt để dễ xử lý Cloudflare
-    crawl_bds_to_mongodb(pages=3, headless=False)
+    test_headless = "--headless" in sys.argv
+    profile_arg = "browser_profile_test" if "--test-profile" in sys.argv else None
+    crawl_bds_to_mongodb(pages=1, headless=test_headless, user_data_dir=profile_arg)
