@@ -1,17 +1,18 @@
 """ETL orchestrator — chuyển raw listings từ MongoDB sang PostgreSQL.
 """
 
-from __future__ import annotations
-
 import sys
-from dataclasses import dataclass
 from pathlib import Path
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-# Cho phép chạy trực tiếp file: python src/database/postgres_repository.py
+# Cho phép chạy trực tiếp file: Luôn đặt lên đầu
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+# Import cấu hình
+from config.settings import MONGO_COLLECTION_BDS, MONGO_COLLECTION_CHOTOT
 
 from src.database.address_cleaner import clean_address_text, normalize_text
 from src.database.dim_repository import (
@@ -52,10 +53,7 @@ def _load_raw_docs(source: Optional[str] = None, collection_name: str = "raw_lis
 
 
 def debug_address_pipeline(limit: int = 5, source: Optional[str] = None) -> None:
-    """Trace mất dấu qua từng tầng để biết chính xác vấn đề xảy ra ở đâu.
-
-    Chạy:  python -c "from src.database.postgres_repository import debug_address_pipeline; debug_address_pipeline(5)"
-    """
+    """Trace mất dấu qua từng tầng để biết chính xác vấn đề xảy ra ở đâu."""
     docs = _load_raw_docs(source=source)[:limit]
     print(f"\n{'='*70}")
     print(f"DEBUG ADDRESS PIPELINE — {len(docs)} records")
@@ -68,7 +66,8 @@ def debug_address_pipeline(limit: int = 5, source: Optional[str] = None) -> None
         print(f"    MONGO district : {raw['district']!r}")
         print(f"    MONGO city     : {raw['city']!r}")
         result = clean_address_text(
-            raw["address"], raw["ward"], raw["district"], raw["city"], raw["source_url"]
+            raw["address"], raw["ward"], raw["district"], raw["city"], 
+            raw["source_url"], raw["title"], raw["description"]
         )
         print(f"    → address_text : {result!r}")
         print()
@@ -104,7 +103,7 @@ def load_raw_listings_to_postgres(
         quarantine_rows: List[Dict[str, Any]] = []
 
         for doc in docs:
-            fact_row, quarantine_row = build_fact_row(doc, dim_maps)
+            fact_row, quarantine_row = build_fact_row(pg, doc, dim_maps)
             if fact_row is not None:
                 fact_row["run_id"] = run_id
                 fact_rows.append(fact_row)
@@ -138,17 +137,18 @@ def load_raw_listings_to_postgres(
     }
 
 
-def load_all_sources_to_postgres(collection_name: str = "raw_listings") -> Dict[str, int]:
-    """Load toàn bộ raw listings theo từng source để dễ theo dõi và restart."""
+def load_all_sources_to_postgres(collection_name: str = "raw_listings") -> None:
+    """Load toàn bộ raw listings theo từng source và in ra kết quả dạng dict."""
     combined = {"records_read": 0, "records_loaded": 0, "records_quarantined": 0}
     for source in ("chotot", "batdongsan"):
+        print(f"--- Loading {source} to Postgres ---")
         result = load_raw_listings_to_postgres(source=source, collection_name=collection_name)
+        print(f"Done {source}: {result}")
         combined["records_read"] += result["records_read"]
         combined["records_loaded"] += result["records_loaded"]
         combined["records_quarantined"] += result["records_quarantined"]
-    return combined
+    print(f"\nFinal Result: {combined}")
 
 
 if __name__ == "__main__":
-    result = load_all_sources_to_postgres()
-    print(result)
+    load_all_sources_to_postgres()

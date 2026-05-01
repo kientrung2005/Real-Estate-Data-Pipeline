@@ -1,11 +1,13 @@
 """Kết nối MongoDB theo kiểu class/context-manager."""
 
 import os
-
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.errors import ConnectionFailure
+
+# Import cấu hình
+from config.settings import MONGO_DB_NAME
 
 load_dotenv()
 
@@ -23,7 +25,8 @@ class MongoDBConnect:
         port = os.getenv("MONGO_PORT", "27017")
         user = os.getenv("MONGO_USER", "admin")
         password = os.getenv("MONGO_PASS", "password123")
-        database = os.getenv("MONGO_DB_NAME", "real_estate_raw")
+        # Sử dụng MONGO_DB_NAME từ config làm mặc định
+        database = os.getenv("MONGO_DB_NAME", MONGO_DB_NAME)
         auth_source = os.getenv("MONGO_AUTH_SOURCE", "admin")
         mongo_uri = f"mongodb://{user}:{password}@{host}:{port}/?authSource={auth_source}"
         return cls(mongo_uri=mongo_uri, database=database)

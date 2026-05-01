@@ -96,10 +96,4 @@ SELECT
 FROM generate_series(CURRENT_DATE - INTERVAL '5 years', CURRENT_DATE + INTERVAL '5 years', INTERVAL '1 day') d
 ON CONFLICT (date_key) DO NOTHING;
 
--- 3.7. Seed phường/xã tiêu biểu
-INSERT INTO dim_ward (district_id, ward_name, canonical_name, alias_names)
-SELECT district_id, 'Xa Tan Hoi', 'Tân Hội', ARRAY['Tan Hoi', 'Xa Tan Hoi', 'Tân Hội', 'Xã Tân Hội']::text[]
-FROM dim_district WHERE district_name = 'Đan Phượng'
-ON CONFLICT (district_id, canonical_name) DO NOTHING;
-
 COMMIT;

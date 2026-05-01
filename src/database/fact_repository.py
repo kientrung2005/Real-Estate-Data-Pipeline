@@ -12,7 +12,11 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from psycopg2 import sql
 from psycopg2.extras import Json, execute_values
 
-from src.database.address_cleaner import clean_address_text, normalize_text
+from src.database.address_cleaner import (
+    clean_address_text, 
+    normalize_text,
+    _accentize_admin_name
+)
 from src.database.dim_repository import (
     PROPERTY_TYPE_MAP,
     resolve_area_band,
@@ -20,6 +24,7 @@ from src.database.dim_repository import (
     resolve_price_band,
     resolve_property_type,
     resolve_source_id,
+    upsert_dim_wards,
 )
 from src.database.postgres_connect import PostgreSQLConnect
 
@@ -102,7 +107,7 @@ def _price_per_sqm_million(price_million: Optional[float], area_sqm: Optional[fl
 # Build fact row
 
 def build_fact_row(
-    doc: Dict[str, Any], dim_maps: Dict[str, Dict[str, Any]]
+    pg: PostgreSQLConnect, doc: Dict[str, Any], dim_maps: Dict[str, Dict[str, Any]]
 ) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
     """Xây dựng fact row từ raw doc. Trả về (fact_row, None) hoặc (None, quarantine_row)."""
     raw = extract_raw_fields(doc)
@@ -183,56 +188,31 @@ def build_fact_row(
                     resolved_district_name = district_key
                     break
 
-    full_address = clean_address_text(raw["address"], raw["ward"], resolved_district_name, raw["city"], raw["source_url"])
+    full_address = clean_address_text(
+        raw["address"], raw["ward"], resolved_district_name, raw["city"], 
+        raw["source_url"], raw.get("title"), raw.get("description")
+    )
     address_parts = [p.strip() for p in (full_address or "").split(",") if p.strip()]
     extracted_ward = address_parts[0] if len(address_parts) >= 3 else None
 
-    # Bổ sung: Nếu vẫn chưa tìm thấy Phường, hãy thử lùng sục trong Tiêu đề và Mô tả
-    if not extracted_ward:
-        search_text_full = normalize_text(" ".join(filter(None, [
-            raw.get("title", ""),
-            raw.get("description", ""),
-            raw.get("address", "")
-        ])))
-        # Danh sách các quận để tránh nhận diện nhầm quận thành phường
-        districts_slugs = {
-            "tay ho", "nam tu liem", "bac tu liem", "ha dong", "dong anh", 
-            "dan phuong", "hoai duc", "gia lam", "cau giay", "dong da", 
-            "hoang mai", "thanh xuan", "hai ba trung", "long bien", 
-            "ba dinh", "hoan kiem", "thanh tri", "son tay", "quoc oai", 
-            "chuong my", "thach that"
-        }
-        
-        from src.database.address_cleaner import ADMIN_ACCENT_MAP
-        # Sắp xếp từ điển theo độ dài slug giảm dần để ưu tiên các tên dài (tránh bắt trúng từ ngắn trong từ dài)
-        sorted_items = sorted(ADMIN_ACCENT_MAP.items(), key=lambda x: len(x[0]), reverse=True)
-        
-        for slug, pretty_name in sorted_items:
-            # Chỉ tìm nếu slug xuất hiện như một từ độc lập và có độ dài hợp lý
-            if re.search(rf"\b{re.escape(slug)}\b", search_text_full) and slug not in districts_slugs and len(slug) > 3:
-                # KIỂM TRA TÍNH HỢP LỆ: Phường phải thuộc Quận (nếu có thông tin quận)
-                from src.database.address_cleaner import WARD_DISTRICT_MAP
-                # Làm sạch tên quận để khớp với Map (bỏ chữ Quận/Huyện)
-                d_name_clean = re.sub(r"^(Quận|Huyện|Thị xã)\s+", "", resolved_district_name or "").strip()
-                
-                if d_name_clean in WARD_DISTRICT_MAP:
-                    if slug not in WARD_DISTRICT_MAP[d_name_clean]:
-                        continue # Phường này không thuộc quận này, bỏ qua
-                
-                # Thêm tiền tố Phường/Xã cho chuẩn
-                prefix = "Xã" if slug in {"tan hoi", "duong xa", "di trach", "uy no", "xuan non"} else "Phường"
-                extracted_ward = f"{prefix} {pretty_name}"
-                
-                # Cập nhật luôn vào địa chỉ đầy đủ để hiển thị cho đẹp
-                if full_address and pretty_name not in full_address:
-                    full_address = f"{extracted_ward}, {full_address}"
-                break
+    # Ánh xạ ward_id từ bảng dim_ward
+    ward_id = None
+    if extracted_ward:
+        # Tra cứu nhanh trong bộ nhớ trước
+        ward_id = dim_maps["ward"].get(normalize_text(extracted_ward) or "")
+        # Nếu chưa có, tự động thêm mới vào database và lấy ID
+        if not ward_id:
+            ward_id = upsert_dim_wards(pg, extracted_ward, district_id or 0, raw["city"] or "Hà Nội")
+            # Cập nhật ngược lại vào bộ nhớ để các bản ghi sau dùng luôn
+            if ward_id:
+                dim_maps["ward"][normalize_text(extracted_ward)] = ward_id
 
     fact_row = {
         "run_id": None,
         "source_id": source_id,
         "external_id": external_id,
         "district_id": district_id,
+        "ward_id": ward_id,
         "ward_name": extracted_ward,
         "type_id": resolve_property_type(raw["property_type"], dim_maps["property_type"]),
         "date_key": date_key,
@@ -297,7 +277,7 @@ def upsert_fact_rows(pg: PostgreSQLConnect, rows: Sequence[Dict[str, Any]]) -> i
     existing_cols = {r[0] for r in pg.cursor.fetchall()}
 
     columns = ["run_id", "source_id", "external_id", 
-        "district_id", "ward_name", "type_id", "date_key",
+        "district_id", "ward_id", "ward_name", "type_id", "date_key",
         "price_band_id", "area_band_id", "title", "listing_url",
         "address_text", "price_million_vnd", "area_sqm",
         "price_per_sqm_million", "first_seen_at", "last_seen_at", "is_active",
@@ -337,6 +317,7 @@ def upsert_fact_rows(pg: PostgreSQLConnect, rows: Sequence[Dict[str, Any]]) -> i
         update_items = [
             "run_id = EXCLUDED.run_id",
             "district_id = EXCLUDED.district_id",
+            "ward_id = EXCLUDED.ward_id",
             "ward_name = EXCLUDED.ward_name",
             "type_id = EXCLUDED.type_id",
             "date_key = EXCLUDED.date_key",

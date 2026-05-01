@@ -82,11 +82,84 @@ ADMIN_ACCENT_MAP = {
     "tuong mai": "Tương Mai",
     "van chuong": "Văn Chương",
     "phuc dong": "Phúc Đồng",
+    "dong my": "Đông Mỹ",
+    "pho hue": "Phố Huế",
+    "la khe": "La Khê",
+    "kim ma": "Kim Mã",
+    "yen so": "Yên Sở",
+    "nhat tan": "Nhật Tân",
+    "thuong dinh": "Thượng Đình",
     "dang xa": "Đặng Xá",
     "kim lien": "Kim Liên",
     "mai dich": "Mai Dịch",
-    "thinh quang": "Thịnh Quang",
+    "dong nhan": "Đồng Nhân",
+    "tu liem": "Từ Liêm",
+    "son dong": "Sơn Đồng",
+    "nam hong": "Nam Hồng",
+    "yen nghia": "Yên Nghĩa",
+    "phu la": "Phú La",
+    "phu lam": "Phú Lãm",
+    "dai mo": "Đại Mỗ",
+    "bach khoa": "Bách Khoa",
+    "quang an": "Quảng An",
+    "lang ha": "Láng Hạ",
+    "vinh tuy": "Vĩnh Tuy",
+    "kham thien": "Khâm Thiên",
     "hang bot": "Hàng Bột",
+    "cau den": "Cầu Dền",
+    "dong nhan": "Đồng Nhân",
+    "tu liem": "Từ Liêm",
+    "son dong": "Sơn Đồng",
+    "nam hong": "Nam Hồng",
+    "tan hoi": "Tân Hội",
+    "o dien": "Ô Diên",
+    "hoa thach": "Hoa Thạch",
+    "phung chau": "Phụng Châu",
+    "tan trieu": "Tân Triều",
+    "tu hiep": "Tứ Hiệp",
+    "xuan mai": "Xuân Mai",
+    "dong ngac": "Đông Ngạc",
+    "cau dien": "Cầu Diễn",
+    "bien giang": "Biên Giang",
+    "phu do": "Phú Đô",
+    "bac son": "Bắc Sơn",
+    "vong la": "Vọng La",
+    "hai boi": "Hải Bối",
+    "kim chung": "Kim Chung",
+    "le dai hanh": "Lê Đại Hành",
+    "pham dinh ho": "Phạm Đình Hổ",
+    "thanh van": "Thanh Văn",
+    "kim bai": "Kim Bài",
+    "dong mac": "Đông Mác",
+    "co nhue 2": "Cổ Nhuế 2",
+    "phuong canh": "Phương Canh",
+    "mai lam": "Mai Lâm",
+    "huu hoa": "Hữu Hòa",
+    "phu dong": "Phù Đổng",
+    "vinh quynh": "Vĩnh Quỳnh",
+    "phu linh": "Phù Linh",
+    "tho": "Phúc Thọ",
+    "lang": "Láng",
+    "ta thanh oai": "Tả Thanh Oai",
+    "xuan non": "Xuân Nộn",
+    "my dinh 1": "Mỹ Đình 1",
+    "dong mai": "Đồng Mai",
+    "khuong thuong": "Khương Thượng",
+    "quynh mai": "Quỳnh Mai",
+    "nhi khe": "Nhị Khê",
+    "thuong thanh": "Thượng Thanh",
+    "mai dinh": "Mai Đình",
+    "van con": "Vân Côn",
+    "binh yen": "Bình Yên",
+    "dai mach": "Đại Mạch",
+    "vo nghia": "Võ Nghĩa",
+    "thanh xuan": "Thanh Xuân",
+    "phu minh": "Phú Minh",
+    "phu cuong": "Phú Cường",
+    "ma xa": "Mai Đình",
+    "quang minh": "Quang Minh",
+    "chi dong": "Chi Đông",
+    "thinh quang": "Thịnh Quang",
     "cat linh": "Cát Linh",
     "kham thien": "Khâm Thiên",
     "phuong lien": "Phương Liên",
@@ -152,24 +225,63 @@ ADMIN_ACCENT_MAP = {
     "thanh tri": "Thanh Trì",
     "thinh liet": "Thịnh Liệt",
     "tran phu": "Trần Phú",
+    "dai ang": "Đại Áng",
+    "dong my": "Đông Mỹ",
+    "duyen ha": "Duyên Hà",
+    "huu hoa": "Hữu Hòa",
+    "lien ninh": "Liên Ninh",
+    "ngu hiep": "Ngũ Hiệp",
+    "ta thanh oai": "Tả Thanh Oai",
+    "tam hiep": "Tam Hiệp",
+    "tan trieu": "Tân Triều",
+    "thanh liet": "Thanh Liệt",
+    "tu hiep": "Tứ Hiệp",
+    "van phuc": "Vạn Phúc",
+    "vinh quynh": "Vĩnh Quỳnh",
+    "yen my": "Yên Mỹ",
+    "van dien": "Văn Điển",
     "buoi": "Bưởi",
     "thuy khue": "Thụy Khuê",
     "yen phu": "Yên Phụ",
     "tu lien": "Tứ Liên",
     "quang an": "Quảng An",
+    "hoa thach": "Hòa Thạch",
+    "phuong canh": "Phương Canh",
+    "xuan phuong": "Xuân Phương",
     "xuan la": "Xuân La",
     "dong du": "Đông Dư",
     "cu khoi": "Cự Khối",
     "bat trang": "Bát Tràng",
+    "giang vo": "Giảng Võ",
+    "kim ma": "Kim Mã",
+    "ngoc ha": "Ngọc Hà",
+    "thanh cong": "Thành Công",
+    "dien bien": "Điện Biên",
+    "vinh phuc": "Vĩnh Phúc",
+    "phuc xa": "Phúc Xá",
+    "nguyen trung truc": "Nguyễn Trung Trực",
     "ngoc khanh": "Ngọc Khánh",
     "truc bach": "Trúc Bạch",
     "quan thanh": "Quán Thánh",
     "doi can": "Đội Cấn",
     "cong vi": "Cống Vị",
     "lieu giai": "Liễu Giai",
-    "giang vo": "Giảng Võ",
-    "kim ma": "Kim Mã",
-    "ngoc ha": "Ngọc Hà",
+    "nghia do": "Nghĩa Đô",
+    "nghia tan": "Nghĩa Tân",
+    "quan hoa": "Quan Hoa",
+    "dich vong": "Dịch Vọng",
+    "dich vong hau": "Dịch Vọng Hậu",
+    "mai dich": "Mai Dịch",
+    "trung hoa": "Trung Hòa",
+    "yen hoa": "Yên Hòa",
+    "cau dien": "Cầu Diễn",
+    "my dinh 1": "Mỹ Đình 1",
+    "my dinh 2": "Mỹ Đình 2",
+    "phu do": "Phú Đô",
+    "me tri": "Mễ Trì",
+    "trung van": "Trung Văn",
+    "dai mo": "Đại Mỗ",
+    "tay mo": "Tây Mỗ",
     "trau quy": "Trâu Quỳ",
     "yen thuong": "Yên Thường",
     "yen vien": "Yên Viên",
@@ -183,11 +295,11 @@ ADMIN_ACCENT_MAP = {
     "ngoc lam": "Ngọc Lâm",
     "giang bien": "Giang Biên",
     "xuan dinh": "Xuân Đỉnh",
-    "dan": "Đàn",
     "thach hoa": "Thạch Hòa",
     "ngoc hoi": "Ngọc Hồi",
     "duong": "Dương Xá",
     "thach": "Thạch Bàn",
+    "lang": "Láng",
     "tay tuu": "Tây Tựu",
     "dong ngac": "Đông Ngạc",
     "duc thang": "Đức Thắng",
@@ -208,48 +320,8 @@ ADMIN_ACCENT_MAP = {
     "tran hung dao": "Trần Hưng Đạo",
     "giap nhi": "Giáp Nhị",
     "den lu": "Đền Lừ",
-    # Ba Đình
-    "thanh cong": "Thành Công",
-    "dien bien": "Điện Biên",
-    "vinh phuc": "Vĩnh Phúc",
-    "phuc xa": "Phúc Xá",
-    "nguyen trung truc": "Nguyễn Trung Trực",
-    "giang vo": "Giảng Võ",
-    "kim ma": "Kim Mã",
-    "lieu giai": "Liễu Giai",
-    "ngoc ha": "Ngọc Hà",
-    "ngoc khanh": "Ngọc Khánh",
-    "quan thanh": "Quán Thánh",
-    "truc bach": "Trúc Bạch",
-    "doi can": "Đội Cấn",
-    "cong vi": "Cống Vị",
-    "kim ma": "Kim Mã",
-    "lieu giai": "Liễu Giai",
-    "ngoc ha": "Ngọc Hà",
-    # Tây Hồ (đã có một số ở trên, bổ sung nốt)
-    "quang an": "Quảng An",
-    "tu lien": "Tứ Liên",
-    "buoi": "Bưởi",
-    "thuy khue": "Thụy Khuê",
-    "xuan la": "Xuân La",
-    "yen phu": "Yên Phụ",
-    "nhat tan": "Nhật Tân",
     "phu thuong": "Phú Thượng",
-    # Hoàng Mai
-    "giap bat": "Giáp Bát",
-    "tan mai": "Tân Mai",
     "tuong mai": "Tương Mai",
-    "hoang liet": "Hoàng Liệt",
-    "thinh liet": "Thịnh Liệt",
-    "dai kim": "Đại Kim",
-    "dinh cong": "Định Công",
-    "vinh hung": "Vĩnh Hưng",
-    "linh nam": "Lĩnh Nam",
-    "tran phu": "Trần Phú",
-    "yen so": "Yên Sở",
-    "mai dong": "Mai Động",
-    "thanh tri": "Thanh Trì",
-    "hoang van thu": "Hoàng Văn Thụ",
     "me linh": "Mê Linh",
     "soc son": "Sóc Sơn",
     "thuong tin": "Thường Tín",
@@ -292,10 +364,10 @@ WARD_DISTRICT_MAP = {
         "trau quy", "duong xa", "da ton", "kiieu kỵ", "bat trang", "yen vien"
     },
     "Đông Anh": {
-        "uy no", "xuan non", "kim chung", "vinh ngoc", "hai boi", "dong anh"
+        "uy no", "xuan non", "kim chung", "vinh ngoc", "hai boi", "dong hoi", "co loa", "dai mach", "duc tu"
     },
     "Đan Phượng": {
-        "tan hoi", "tan lap", "dan phuong", "phung"
+        "tan hoi", "tan lap", "phung"
     },
     "Hoài Đức": {
         "di trach", "tram troi", "an khanh", "an thuong", "la phu"
@@ -326,7 +398,17 @@ def clean_location_name(value: Optional[object]) -> Optional[str]:
     normalized = normalize_text(value)
     if not normalized:
         return None
-    normalized = re.sub(r"^(quan|huyen|thi xa|phuong|xa|thi tran)\s+", "", normalized)
+    
+    # Đặc biệt cho Xã Đàn, Phố Sơn Tây: Không được bóc tách tiền tố
+    if any(k in normalized for k in ("xa dan", "pho son tay", "duong son tay")):
+        return title_case_from_normalized(normalized)
+    
+    # Nếu bản thân normalized đã là một slug chuẩn trong map, giữ nguyên nó
+    # (Để tránh cắt nhầm "Phương" trong "Phương Canh", "Xuân" trong "Xuân Phương")
+    if normalized in ADMIN_ACCENT_MAP:
+        return title_case_from_normalized(normalized)
+        
+    normalized = re.sub(r"^(quan|huyen|thi xa|phuong|xa|thi tran|duong|ngo|hem|ngach)\s+", "", normalized)
     normalized = re.sub(r"^(q|h|p|x|tx)\s+", "", normalized)
     normalized = re.sub(r"\b(tp|thanh pho|thanh pho ha noi|ha noi)\b", "", normalized).strip()
     normalized = re.sub(r"\bmoi$", "", normalized).strip()
@@ -353,15 +435,30 @@ def unique_texts(values: Iterable[Optional[object]]) -> List[str]:
 
 
 def infer_district_type(raw_district: Optional[object]) -> Optional[str]:
+    """Suy luận loại hình quận/huyện từ text hoặc tên lõi."""
     text = normalize_text(raw_district)
     if not text:
         return None
-    if text.startswith("huyen ") or text.startswith("h "):
+    if any(k in text for k in ("huyen ", " h ", " h.")):
         return "huyen"
-    if text.startswith("thi xa") or text.startswith("tx "):
+    if any(k in text for k in ("thi xa", " tx ", " tx.")):
         return "thi_xa"
-    if text.startswith("quan ") or text.startswith("q "):
+    if any(k in text for k in ("quan ", " q ", " q.")):
         return "quan"
+        
+    # Bổ sung danh sách các huyện thực tế ở Hà Nội để suy luận từ tên lõi
+    districts_huyen = {
+        "dong anh", "gia lam", "thanh tri", "tu liem", "me linh", 
+        "soc son", "thanh oai", "chuong my", "thach that", "quoc oai",
+        "dan phuong", "hoai duc", "phuc tho", "ba vi", "my duc",
+        "ung hoa", "phu xuyen", "thuong tin"
+    }
+    core = clean_location_name(text)
+    if core in districts_huyen:
+        return "huyen"
+    if core == "son tay":
+        return "thi_xa"
+        
     return None
 
 
@@ -425,50 +522,86 @@ def _accentize_admin_name(raw_text: Optional[object]) -> Optional[str]:
     return f"{prefix} {pretty}".strip() if prefix else pretty
 
 
-def _accentize_known_segment(segment: str) -> str:
+def _accentize_known_segment(segment: str, district_type: str = "quan") -> str:
     text = segment.strip()
     if not text:
         return text
     
-    prefix = ""
-    rest = text
-    match = re.match(r"^(Quận|Huyện|Thị xã|Thị trấn|Phường|Xã|Quan|Huyen|Thi xa|Thi tran|Phuong|Xa)\b\s*", text, flags=re.IGNORECASE)
-    if match:
-        raw_prefix = match.group(1).lower()
-        prefix_map = {
-            "quan": "Quận", "huyen": "Huyện", "thi xa": "Thị xã",
-            "thi tran": "Thị trấn", "phuong": "Phường", "xa": "Xã"
-        }
-        prefix = prefix_map.get(raw_prefix, raw_prefix.capitalize())
-        rest = text[len(match.group(0)):]
-    
-    key = normalize_text(rest)
-    if not key:
-        return text
-        
-    # Ưu tiên check toàn bộ chuỗi trước
-    if key in ADMIN_ACCENT_MAP:
-        pretty_name = ADMIN_ACCENT_MAP[key]
-        if not prefix:
-            # Tự động suy luận prefix nếu thiếu
-            d_type = infer_district_type(key)
-            if d_type:
-                prefix = "Quận" if d_type == "quan" else ("Huyện" if d_type == "huyen" else "Thị xã")
-            elif len(key.split()) <= 3: # Giả định là Phường nếu không phải Quận
-                prefix = "Xã" if key in {"kiieu ky", "tan hoi", "duong xa", "di trach", "uy no", "xuan non", "da ton"} else "Phường"
-        
-        return f"{prefix} {pretty_name}" if prefix else pretty_name
-    
-    # Nếu không khớp hoàn toàn, thử bỏ bớt các từ ở cuối (để xử lý "Di Trach Hinode" -> "Di Trạch")
-    # Chỉ áp dụng nếu có prefix (Xã/Phường) để tránh cắt nhầm tên đường
-    if prefix:
-        tokens = key.split()
-        while len(tokens) > 1:
-            tokens.pop()
-            sub_key = " ".join(tokens)
-            if sub_key in ADMIN_ACCENT_MAP:
-                return f"{prefix} {ADMIN_ACCENT_MAP[sub_key]}"
+    # Lấy tên lõi (bỏ tiền tố Quận/Phường)
+    core_name = clean_location_name(text)
+    core_norm = normalize_text(core_name) or ""
 
+    # Danh mục dùng chung (Thị trấn và Xã phổ biến)
+    towns = {"yen vien", "trau quy", "dong anh", "phung", "tram troi", "chuc son", "xuan mai", "lien quan", "quoc oai", "thach that", "soc son", "van dinh", "dai nghia", "thuong tin", "phu xuyen", "phu minh", "tay dang", "phuc tho"}
+    communes = {
+        "phung chau", "van con", "binh yen", "kiieu ky", "tan hoi", "duong xa", "di trach", "uy no", "xuan non", "da ton", "o dien", "o dien moi", "tan lap", "dong du", "bat trang", "phu dong", "co dong", "phu cat", "tan trieu", "tu hiep",
+        "thanh thuy", "huu hoa", "vinh quynh", "ngu hiep", "ngoc hoi", "lien ninh", "duyen ha", "dai ang", "dong my", "ta thanh oai", "tam hiep", "vinh quynh", "huu hoa", "thanh liet",
+        "dong hoi", "co loa", "duc tu", "vinh ngoc", "hai boi", "nguyen khe", "tien duong"
+    }
+    
+    # Danh sách các quận/huyện
+    districts_list = {
+        "tay ho", "nam tu liem", "bac tu liem", "ha dong", "dong anh", 
+        "dan phuong", "hoai duc", "gia lam", "cau giay", "dong da", 
+        "hoang mai", "thanh xuan", "hai ba trung", "long bien", 
+        "ba dinh", "hoan kiem", "thanh tri", "son tay", "quoc oai", 
+        "chuong my", "thach that", "me linh", "soc son", "thuong tin",
+        "thanh oai", "phu xuyen", "ung hoa", "my duc", "ba vi", "phuc tho"
+    }
+
+    # Tìm kiếm tên khớp nhất từ ADMIN_ACCENT_MAP
+    matched_slug = None
+    if core_norm in ADMIN_ACCENT_MAP:
+        matched_slug = core_norm
+    else:
+        sorted_slugs = sorted(ADMIN_ACCENT_MAP.keys(), key=len, reverse=True)
+        for s in sorted_slugs:
+            # Chỉ cho phép khớp phần đầu với các slug đủ dài (>5 ký tự) 
+            # để tránh nhầm lẫn (ví dụ: tránh nhầm "Đường..." thành "Dương Xá")
+            if len(s) > 5 and core_norm.startswith(s + " "):
+                matched_slug = s
+                break
+
+    if matched_slug:
+        pretty_name = ADMIN_ACCENT_MAP[matched_slug]
+        core_norm = matched_slug
+        
+        # Tự động sửa tiền tố
+        prefix = "Xã" if district_type == "huyen" else "Phường"
+        
+        if core_norm in districts_list:
+            # Ưu tiên Huyện cho các huyện ngoại thành
+            huyen_list = {"chuong my", "hoai duc", "thach that", "quoc oai", "thanh tri", "gia lam", "dong anh", "me linh", "soc son", "ba vi", "phuc tho", "dan phuong", "thanh oai", "phu xuyen", "ung hoa", "my duc", "thuong tin"}
+            
+            # ĐẶC BIỆT: Nếu đầu vào đã ghi rõ là Phường/Xã/Thị trấn thì KHÔNG được ép thành Quận/Huyện
+            if re.search(r"\b(phường|phuong|xã|xa|thị trấn|thi tran)\b", text, flags=re.IGNORECASE):
+                # Không return sớm, để trôi xuống các check Towns/Communes bên dưới
+                pass
+            else:
+                if core_norm in huyen_list or district_type == "huyen":
+                    p_fix = "Huyện"
+                else:
+                    p_fix = "Quận"
+                if core_norm == "son tay":
+                    p_fix = "Thị xã"
+                return f"{p_fix} {pretty_name}"
+
+        # Ưu tiên các danh mục đã biết (Communes/Towns) để "đè" lên các prefix sai từ đầu vào
+        if core_norm in towns:
+            prefix = "Thị trấn"
+        elif core_norm in communes:
+            prefix = "Xã"
+        else:
+            # Nếu KHÔNG nằm trong danh mục đặc biệt, tôn trọng tiền tố từ đầu vào
+            if re.search(r"\b(thị trấn|thi tran)\b", text, flags=re.IGNORECASE):
+                prefix = "Thị trấn"
+            elif re.search(r"\b(phường|phuong)\b", text, flags=re.IGNORECASE):
+                prefix = "Phường"
+            elif re.search(r"\b(xã|xa)\b", text, flags=re.IGNORECASE):
+                prefix = "Xã"
+            
+        return f"{prefix} {pretty_name}"
+    
     return text
 
 
@@ -602,6 +735,8 @@ def clean_address_text(
     district: Optional[object],
     city: Optional[object],
     listing_url: Optional[object] = None,
+    title: Optional[object] = None,
+    description: Optional[object] = None,
 ) -> Optional[str]:
     text = str(address).strip() if address is not None else ""
     url_loc = extract_admin_location_from_listing_url(listing_url)
@@ -610,28 +745,39 @@ def clean_address_text(
         p_lower = normalize_text(part) or ""
         if p_lower in ("ha noi", "hanoi"):
             return 3
-        # Xã Đàn là tên đường
-        if p_lower in ("xa dan", "xa dan moi"):
+        # Xã Đàn, Phố Sơn Tây là tên đường
+        if any(k in p_lower for k in ("xa dan", "son tay moi", "pho son tay", "duong son tay")):
             return 0
-        if re.match(r"^(quận|huyện|thị xã|quan|huyen|thi xa)\b", part, flags=re.IGNORECASE):
-            return 2
-        if re.match(r"^(phường|xã|thị trấn|phuong|xa|thi tran)\b", part, flags=re.IGNORECASE):
-            return 1
+        # Danh sách các quận/huyện để đối chiếu
+        districts = {
+            "tay ho", "nam tu liem", "bac tu liem", "ha dong", "dong anh", 
+            "dan phuong", "hoai duc", "gia lam", "cau giay", "dong da", 
+            "hoang mai", "thanh xuan", "hai ba trung", "long bien", 
+            "ba dinh", "hoan kiem", "thanh tri", "son tay", "quoc oai", 
+            "chuong my", "thach that", "me linh", "soc son", "thuong tin",
+            "thanh oai", "phu xuyen", "ung hoa", "my duc", "ba vi", "phuc tho"
+        }
         
-        # Bổ sung: Nếu tên nằm trong ADMIN_ACCENT_MAP
-        if p_lower in ADMIN_ACCENT_MAP:
-            # Danh sách các quận/huyện
-            districts = {
-                "tay ho", "nam tu liem", "bac tu liem", "ha dong", "dong anh", 
-                "dan phuong", "hoai duc", "gia lam", "cau giay", "dong da", 
-                "hoang mai", "thanh xuan", "hai ba trung", "long bien", 
-                "ba dinh", "hoan kiem", "thanh tri", "son tay", "quoc oai", 
-                "chuong my", "thach that"
-            }
-            if p_lower in districts:
-                return 2  # Nó là Quận (Level 2)
-            else:
-                return 1  # Nó là Phường (Level 1)
+        core_name = clean_location_name(part)
+        core_norm = normalize_text(core_name) or ""
+        
+        # Nếu không có tên lõi (chỉ có tiền tố rỗng), đây không phải là cấp hành chính hợp lệ
+        if not core_norm:
+            return 0
+            
+        # 1. Nhận diện theo tiền tố ĐÃ chuẩn hóa (từ _accentize_known_segment)
+        if part.startswith("Phường") or part.startswith("Xã") or part.startswith("Thị trấn"):
+            return 1
+        if part.startswith("Quận") or part.startswith("Huyện") or part.startswith("Thị xã"):
+            return 2
+            
+        # 2. Nhận diện các từ khóa Quận/Huyện chuẩn (cho các phần chưa chuẩn hóa)
+        if re.match(r"^(quận|huyện|thị xã|huyen|thi xa)\b", part, flags=re.IGNORECASE):
+            return 2
+            
+        # 3. Bổ sung: Nếu tên nằm trong ADMIN_ACCENT_MAP 
+        if p_lower in ADMIN_ACCENT_MAP or core_norm in ADMIN_ACCENT_MAP:
+            return 2 if core_norm in districts else 1
                 
         return 0
 
@@ -646,13 +792,35 @@ def clean_address_text(
         text = re.sub(r"\bX\.\s*", "Xã ", text)
         text = re.sub(r"\bTX\.\s*", "Thị xã ", text)
         text = re.sub(r"\b(?:Ha\s*Noi|Hà\s*Nội)\s*mới\b", "Hà Nội", text, flags=re.IGNORECASE)
+        # Xóa các nội dung trong ngoặc đơn nếu có chứa từ "mới"
+        text = re.sub(r"\([^)]*mới[^)]*\)", "", text, flags=re.IGNORECASE)
         text = re.sub(r"\bDan Phuong\b", "Đan Phượng", text, flags=re.IGNORECASE)
         text = re.sub(r"\s+", " ", text).strip()
+        
+        # Nếu thiếu phường, thử tìm trong title/description hoặc chính address
+        if not _has_ward_token(text):
+            # Chuẩn hóa tên quận để tra cứu map (ví dụ: "Quận Ba Đình" -> "Ba Đình")
+            d_name_raw = str(district) if district else ""
+            d_core = clean_location_name(d_name_raw)
+            # Khôi phục dấu từ ADMIN_ACCENT_MAP cho d_core
+            d_core_norm = normalize_text(d_core) or ""
+            d_name_clean = ADMIN_ACCENT_MAP.get(d_core_norm, d_core)
+            
+            known_wards = WARD_DISTRICT_MAP.get(d_name_clean, set())
+            search_pool = f"{text} {str(title or '')} {str(description or '')}"
+            
+            for kw in sorted(known_wards, key=len, reverse=True):
+                if _contains_normalized(search_pool, kw):
+                    pretty_kw = ADMIN_ACCENT_MAP.get(kw, title_case_from_normalized(kw))
+                    # Thêm vào chuỗi để các bước sau xử lý
+                    text = f"{text}, Phường {pretty_kw}"
+                    break
 
         ward_raw = str(ward).strip() if ward else None
-        ward_candidate: Optional[str] = ward_raw or url_loc.get("ward")
+        # Ưu tiên lấy từ URL trước vì URL thường chứa slug chuẩn của hệ thống (ví dụ: tan-hoi)
+        ward_candidate: Optional[str] = url_loc.get("ward") or ward_raw
         district_raw = str(district).strip() if district else None
-        district_candidate: Optional[str] = district_raw or url_loc.get("district")
+        district_candidate: Optional[str] = url_loc.get("district") or district_raw
 
         if ward_candidate and not _has_ward_token(text) and not _contains_normalized(text, ward_candidate):
             text = f"{text}, {ward_candidate}"
@@ -665,49 +833,70 @@ def clean_address_text(
             text, flags=re.IGNORECASE
         )
 
+        # Tách theo dấu phẩy và cả dấu ngoặc đơn
+        text = text.replace("(", ",").replace(")", ",")
         parts = [p.strip() for p in text.split(",") if p and p.strip()]
-        parts = [p for p in parts if (normalize_text(p) or "") not in ("ha noi moi", "ha noi moi hanoi")]
-        parts = [p for p in parts if not _is_legacy_moi_segment(p)]
         
-        non_city = [p for p in parts if (normalize_text(p) or "") not in ("ha noi", "hanoi")]
-        parts = non_city + ["Hà Nội"]
-        parts = [_accentize_known_segment(p) for p in parts]
+        # 1. Chuẩn hóa tất cả các phần (bao gồm cả việc bỏ chữ "mới" ở đuôi)
+        d_type = infer_district_type(str(district)) if district else "quan"
+        parts = [_accentize_known_segment(p, d_type) for p in parts]
+        
+        # 2. Loại bỏ các phần trùng lặp hoặc vô nghĩa (như Hà Nội, Hà Nội)
         seen_norm: set = set()
         deduped = []
         for p in parts:
+            if not p or normalize_text(p) in ("xa", "phuong", "thi tran", "quan", "huyen"):
+                continue
+            # Chống trùng lặp dựa trên cả tên lõi và Tiền tố (để giữ cả Phường Long Biên và Quận Long Biên)
             key = normalize_text(p) or p
-            if key not in seen_norm:
+            if key not in seen_norm and key not in ("ha noi moi", "ha noi hanoi") and "moi" not in key:
                 seen_norm.add(key)
                 deduped.append(p)
         
-        deduped.sort(key=_get_level)
-        
-        # Lọc nâng cao: mỗi cấp chỉ giữ lại 1 segment duy nhất
-        final_parts = []
+        # 4. Gom nhóm theo cấp độ
         level_map: Dict[int, List[str]] = {1: [], 2: [], 3: []}
         for p in deduped:
             lvl = _get_level(p)
             if lvl > 0:
-                name_only = clean_location_name(p)
-                if not name_only or normalize_text(name_only) in ("phuong", "xa", "quan", "huyen", "thi xa", "thi tran"):
-                    continue
                 level_map[lvl].append(p)
         
-        # Xử lý District (Level 2)
-        districts = level_map[2]
-        district_to_keep = districts[0] if districts else None
+        # 5. Xây dựng chuỗi kết quả cuối cùng theo thứ tự: Phường -> Quận -> Thành phố
+        final_parts = []
         
-        # Xử lý Ward (Level 1)
+        # --- XỬ LÝ PHƯỜNG (LEVEL 1) ---
         wards = level_map[1]
-        ward_to_keep = wards[-1] if wards else None
-        
-        if ward_to_keep:
-            final_parts.append(ward_to_keep)
-        if district_to_keep:
-            final_parts.append(district_to_keep)
+        if wards:
+            final_parts.append(wards[0])
+        else:
+            # Dự phòng 1: Nếu website có tham số ward, sử dụng nó
+            if ward:
+                pw = _accentize_known_segment(str(ward), d_type)
+                if pw:
+                    final_parts.append(pw)
+            
+            # Dự phòng 2: Nếu vẫn chưa có phường, tìm trong Level 0
+            if not final_parts:
+                for p in deduped:
+                    if _get_level(p) == 0:
+                        p_norm = normalize_text(p) or ""
+                        if not re.match(r"^(ql|tl|quoc lo|tinh lo|duong|pho|ngo|ngach|so|kiet|hem)\b", p_norm):
+                            final_parts.append(p)
+                            break
+            
+        # --- XỬ LÝ QUẬN (LEVEL 2) ---
+        districts_found = level_map[2]
+        if districts_found:
+            final_parts.append(districts_found[0])
+        elif district:
+            pd = _accentize_known_segment(str(district), d_type)
+            if pd:
+                final_parts.append(pd)
+            
+        # --- XỬ LÝ THÀNH PHỐ (LEVEL 3) ---
         final_parts.append("Hà Nội")
         
         text = ", ".join(final_parts)
+        
         text = re.sub(r"\s+", " ", text).strip()
         if text:
             return text

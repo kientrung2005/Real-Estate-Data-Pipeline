@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     source_id SMALLINT NOT NULL REFERENCES dim_source(source_id),
     external_id VARCHAR(50),
     district_id SMALLINT,
+    ward_id INT, -- Thêm cột liên kết với dim_ward
     type_id SMALLINT REFERENCES dim_property_type(type_id),
     date_key INT NOT NULL REFERENCES dim_date(date_key),
     price_band_id SMALLINT REFERENCES dim_price_band(price_band_id),
@@ -125,6 +126,7 @@ CREATE TABLE IF NOT EXISTS fact_property_listing (
     title TEXT,
     listing_url TEXT,
     address_text TEXT,
+    ward_name VARCHAR(120), -- Lưu cả tên để đối chiếu nhanh
 
     price_million_vnd NUMERIC(12,2),
     area_sqm NUMERIC(10,2),

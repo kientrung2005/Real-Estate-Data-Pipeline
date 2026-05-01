@@ -18,6 +18,9 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
+# Import cấu hình
+from config.settings import DEFAULT_PAGES_AIRFLOW
+
 # Khởi tạo DAG chạy hằng ngày vào lúc 2 giờ sáng
 with DAG(
     "real_estate_pipeline",
@@ -29,18 +32,18 @@ with DAG(
     tags=["real_estate", "etl"],
 ) as dag:
 
-    # Task 1: Crawl Chợ Tốt (2 trang)
+    # Task 1: Crawl Chợ Tốt
     crawl_chotot_task = PythonOperator(
         task_id="crawl_chotot_to_mongodb",
         python_callable=crawl_chotot_to_mongodb,
-        op_kwargs={"pages": 2},
+        op_kwargs={"pages": DEFAULT_PAGES_AIRFLOW},
     )
 
-    # Task 2: Crawl Batdongsan (1 trang)
+    # Task 2: Crawl Batdongsan
     crawl_bds_task = PythonOperator(
         task_id="crawl_bds_to_mongodb",
         python_callable=crawl_bds_to_mongodb,
-        op_kwargs={"pages": 1, "fetch_detail": True, "headless": True},
+        op_kwargs={"pages": DEFAULT_PAGES_AIRFLOW, "fetch_detail": True, "headless": True},
     )
 
     # Task 3: Load Chợ Tốt từ MongoDB sang Postgres

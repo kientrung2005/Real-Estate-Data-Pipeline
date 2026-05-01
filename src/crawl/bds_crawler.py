@@ -1,18 +1,26 @@
 import sys
 from pathlib import Path
-import time
-import random
-import re
 import os
-from typing import Dict, Optional
-import pandas as pd
-from playwright.sync_api import sync_playwright, Route, Playwright, Browser, BrowserContext, Page
-from playwright_stealth import Stealth
 
-# Cho phép chạy trực tiếp file
+# Cho phép chạy trực tiếp file: Luôn đưa PROJECT_ROOT lên đầu tiên
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+import time
+import random
+import re
+from typing import Dict, Optional
+import pandas as pd
+from playwright.sync_api import sync_playwright, Playwright, Browser, BrowserContext, Page
+from playwright_stealth import Stealth
+
+# Import cấu hình (Sau khi đã setup sys.path)
+from config.settings import (
+    DEFAULT_PAGES_LOCAL, SLEEP_FAST_MODE, SLEEP_SAFE_MODE,
+    BROWSER_PROFILE_NAME, DEFAULT_HEADLESS, LOG_DIR_LOCAL, LOG_DIR_AIRFLOW
+)
+from config.selectors import BDS_SELECTORS
 
 BASE_URL = "https://batdongsan.com.vn/ban-nha-dat-ha-noi"
 
@@ -22,21 +30,22 @@ class BDSCrawler:
     context: BrowserContext
     page: Page
 
-    def __init__(self, headless: bool = True, user_data_dir: Optional[str] = None) -> None:
+    def __init__(self, headless: bool = DEFAULT_HEADLESS, user_data_dir: Optional[str] = None) -> None:
         self.headless = headless
-        # Tu dong bat Fast Mode neu khong chay trong Docker/Airflow
-        self.fast_mode = not os.path.exists("/opt/airflow")
+        # Tự động bật Fast Mode nếu không chạy trong Docker/Airflow
+        self.is_airflow = os.path.exists("/opt/airflow")
+        self.fast_mode = not self.is_airflow
         
         self.playwright = sync_playwright().start()
         
-        # Thu muc luu du lieu trinh duyet
-        base_dir = "/opt/airflow" if os.path.exists("/opt/airflow") else os.getcwd()
+        # Thư mục lưu dữ liệu trình duyệt
+        base_dir = "/opt/airflow" if self.is_airflow else os.getcwd()
         if not user_data_dir:
-            user_data_dir = os.path.join(base_dir, "browser_profile")
+            user_data_dir = os.path.join(base_dir, BROWSER_PROFILE_NAME)
         elif not os.path.isabs(user_data_dir):
             user_data_dir = os.path.join(base_dir, user_data_dir)
         
-        # Khoi tao Chromium voi Stealth mode
+        # Khởi tạo Chromium với Stealth mode
         self.context = self.playwright.chromium.launch_persistent_context(
             user_data_dir,
             headless=headless,
@@ -60,12 +69,12 @@ class BDSCrawler:
         Stealth().apply_stealth_sync(self.page)
 
     def _handle_cloudflare(self):
-        """San va click Cloudflare Turnstile neu xuat hien."""
+        """Săn và click Cloudflare Turnstile nếu xuất hiện."""
         content = self.page.content()
         if "cloudflare" not in content.lower() and "challenge" not in content.lower() and "verify you are human" not in content.lower():
             return False
 
-        # Trong Fast Mode chi thu 3 lan de tiet kiem thoi gian
+        # Trong Fast Mode chỉ thử 3 lần để tiết kiệm thời gian
         retries = 3 if self.fast_mode else 10
         print(f"[SHADOW] Phat hien Cloudflare, dang xu ly...", flush=True)
         
@@ -96,27 +105,28 @@ class BDSCrawler:
             self._handle_cloudflare()
             
             try:
-                self.page.wait_for_selector(".js__card", timeout=10000 if self.fast_mode else 20000)
+                self.page.wait_for_selector(BDS_SELECTORS["CARD"], timeout=10000 if self.fast_mode else 20000)
             except Exception:
-                log_dir = "/opt/airflow/logs" if os.path.exists("/opt/airflow") else "logs"
+                log_dir = LOG_DIR_AIRFLOW if self.is_airflow else LOG_DIR_LOCAL
                 if not os.path.exists(log_dir): os.makedirs(log_dir, exist_ok=True)
                 path = os.path.join(log_dir, f"error_list_{int(time.time())}.png")
                 self.page.screenshot(path=path)
                 print(f"[DEBUG] Khong thay tin rao. Anh loi: {path}", flush=True)
                 raise
             
-            listings = self.page.query_selector_all(".js__card")
+            listings = self.page.query_selector_all(BDS_SELECTORS["CARD"])
             data = []
             for item in listings:
+                # Selector phụ cho link và ad_id
                 link_el = item.query_selector("a.js__product-link-for-product-id")
                 href = link_el.get_attribute("href") if link_el else ""
                 full_link = f"https://batdongsan.com.vn{href}" if href and href.startswith("/") else href
                 ad_id = item.get_attribute("prid") or (href.split("-pr")[-1] if href else "")
                 
-                title_el = item.query_selector(".js__card-title")
-                price_el = item.query_selector(".re__card-config-price")
-                area_el = item.query_selector(".re__card-config-area")
-                location_el = item.query_selector(".re__card-location")
+                title_el = item.query_selector(BDS_SELECTORS["TITLE"])
+                price_el = item.query_selector(BDS_SELECTORS["PRICE"])
+                area_el = item.query_selector(BDS_SELECTORS["AREA"])
+                location_el = item.query_selector(BDS_SELECTORS["LOCATION"])
                 
                 data.append({
                     "ad_id": ad_id,
@@ -134,26 +144,26 @@ class BDSCrawler:
 
     def get_property_detail(self, url: str) -> Optional[Dict]:
         if not url: return None
-        # FAST MODE thi nghi it thoi
-        wait_time = random.uniform(1.0, 2.5) if self.fast_mode else random.uniform(3.0, 7.0)
-        time.sleep(wait_time)
+        # FAST MODE thì nghỉ ít thôi
+        wait_range = SLEEP_FAST_MODE if self.fast_mode else SLEEP_SAFE_MODE
+        time.sleep(random.uniform(*wait_range))
         
         try:
             self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
             self._handle_cloudflare()
             
             try:
-                self.page.wait_for_selector(".js__pr-description", timeout=10000 if self.fast_mode else 20000)
+                self.page.wait_for_selector(BDS_SELECTORS["DESCRIPTION"], timeout=10000 if self.fast_mode else 20000)
             except Exception: return None
             
-            desc_el = self.page.query_selector(".js__pr-description")
+            desc_el = self.page.query_selector(BDS_SELECTORS["DESCRIPTION"])
             description = desc_el.inner_text().strip() if desc_el else ""
-            contact_name_el = self.page.query_selector(".re__contact-name")
+            contact_name_el = self.page.query_selector(BDS_SELECTORS["CONTACT_NAME"])
             contact_name = contact_name_el.inner_text().strip() if contact_name_el else ""
             
             contact_phone = ""
             try:
-                phone_btn = self.page.query_selector(".js__btn-tracking, .re__contact-phone")
+                phone_btn = self.page.query_selector(BDS_SELECTORS["PHONE_BTN"])
                 if phone_btn:
                     phone_btn.click(force=True)
                     time.sleep(0.5 if self.fast_mode else 1.5)
@@ -177,10 +187,10 @@ class BDSCrawler:
         if hasattr(self, 'context'): self.context.close()
         if hasattr(self, 'playwright'): self.playwright.stop()
 
-def crawl_bds_to_mongodb(pages: int = 3, headless: bool = False, user_data_dir: str = None) -> int:
+def crawl_bds_to_mongodb(pages: int = DEFAULT_PAGES_LOCAL, headless: bool = DEFAULT_HEADLESS, user_data_dir: str = None) -> int:
     from src.crawl.bds_pipeline import crawl_bds_to_mongodb as run_pipeline
     return run_pipeline(pages=pages, fetch_detail=True, headless=headless, user_data_dir=user_data_dir)
 
 if __name__ == "__main__":
     test_headless = "--headless" in sys.argv
-    crawl_bds_to_mongodb(pages=3, headless=test_headless)
+    crawl_bds_to_mongodb(pages=DEFAULT_PAGES_LOCAL, headless=test_headless)

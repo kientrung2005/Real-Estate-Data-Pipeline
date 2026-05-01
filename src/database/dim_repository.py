@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from psycopg2.extras import execute_values
@@ -12,7 +13,9 @@ from src.database.address_cleaner import (
     infer_district_type,
     normalize_text,
     title_case_from_normalized,
+    ward_alias_names,
     _accentize_admin_name,
+    ADMIN_ACCENT_MAP,
 )
 from src.database.postgres_connect import PostgreSQLConnect
 
@@ -64,12 +67,27 @@ def load_dim_maps(pg: PostgreSQLConnect) -> Dict[str, Dict[str, Any]]:
     property_type_map = _lookup_map(cursor, "SELECT type_name, type_id FROM dim_property_type")
     price_band_map = _lookup_map(cursor, "SELECT band_name, price_band_id FROM dim_price_band")
     area_band_map = _lookup_map(cursor, "SELECT band_name, area_band_id FROM dim_area_band")
+    ward_map = _lookup_map(
+        cursor,
+        """
+        SELECT lookup_name, ward_id
+        FROM (
+            SELECT ward_name AS lookup_name, ward_id
+            FROM dim_ward
+            UNION ALL
+            SELECT alias_name AS lookup_name, ward_id
+            FROM dim_ward
+            CROSS JOIN LATERAL unnest(COALESCE(alias_names, ARRAY[]::text[])) AS alias_name
+        ) ward_lookup
+        """,
+    )
     return {
         "source": source_map,
         "district": district_map,
         "property_type": property_type_map,
         "price_band": price_band_map,
         "area_band": area_band_map,
+        "ward": ward_map,
     }
 
 
@@ -166,3 +184,44 @@ def upsert_dim_districts(pg: PostgreSQLConnect, rows: Iterable[Tuple[str, str, O
         """,
         items,
     )
+
+
+# Ward upsert logic
+
+def upsert_dim_wards(pg: PostgreSQLConnect, ward_name: str, district_id: int, city_name: str = "Hà Nội") -> int:
+    """Tự động thêm phường mới nếu chưa có và trả về ward_id."""
+    key = clean_location_name(ward_name)
+    if not key:
+        return 0
+    
+    # Chuẩn hóa tên chuẩn (canonical)
+    pretty_core = ADMIN_ACCENT_MAP.get(key) or title_case_from_normalized(key)
+    
+    # Ép tiền tố: Nếu trong ward_name gốc chưa có tiền tố chuẩn, hãy tự thêm vào
+    if re.match(r"^(phường|xã|thị trấn|phuong|xa|thi tran)\b", ward_name, flags=re.IGNORECASE):
+        # Nếu đã có tiền tố, hãy chuẩn hóa nó
+        prefix = "Thị trấn" if "thi tran" in normalize_text(ward_name) else ("Xã" if "xa" in normalize_text(ward_name) else "Phường")
+    else:
+        # Nếu chưa có tiền tố, hãy suy luận
+        communes = {"kiieu ky", "tan hoi", "duong xa", "di trach", "uy no", "xuan non", "da ton", "o dien", "o dien moi", "tan lap", "dong du", "cu khoi", "bat trang", "dong my", "son dong", "nam hong"}
+        prefix = "Xã" if key in communes else "Phường"
+    
+    canonical = f"{prefix} {pretty_core}"
+    aliases = ward_alias_names(ward_name, canonical)
+    
+    pg.cursor.execute(
+        """
+        INSERT INTO dim_ward (ward_name, district_id, city_name, canonical_name, alias_names)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (district_id, canonical_name) DO UPDATE SET
+            ward_name = EXCLUDED.ward_name,
+            canonical_name = EXCLUDED.canonical_name,
+            alias_names = ARRAY(
+                SELECT DISTINCT unnest(COALESCE(dim_ward.alias_names, '{}'::text[]) || COALESCE(EXCLUDED.alias_names, '{}'::text[]))
+            )
+        RETURNING ward_id
+        """,
+        (canonical, district_id, city_name, canonical, aliases)
+    )
+    row = pg.cursor.fetchone()
+    return row[0] if row else 0

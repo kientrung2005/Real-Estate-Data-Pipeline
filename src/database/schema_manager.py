@@ -140,11 +140,19 @@ def ensure_postgres_schema(pg: PostgreSQLConnect) -> None:
 
     _ensure_alias_schema(pg)
 
-    # Đảm bảo có cột ward_name để lưu tên Phường/Xã chuẩn
-    if _table_exists(cursor, "fact_property_listing") and not _column_exists(cursor, "fact_property_listing", "ward_name"):
-        cursor.execute("ALTER TABLE fact_property_listing ADD COLUMN ward_name VARCHAR(120)")
+    # Đảm bảo bảng Fact có đủ cột liên kết với Phường
+    if _table_exists(cursor, "fact_property_listing"):
+        if not _column_exists(cursor, "fact_property_listing", "ward_id"):
+            cursor.execute("ALTER TABLE fact_property_listing ADD COLUMN ward_id INT")
+            # Thêm khóa ngoại nếu cần
+            cursor.execute("""
+                ALTER TABLE fact_property_listing 
+                ADD CONSTRAINT fk_fact_property_ward FOREIGN KEY (ward_id) REFERENCES dim_ward(ward_id)
+            """)
+        if not _column_exists(cursor, "fact_property_listing", "ward_name"):
+            cursor.execute("ALTER TABLE fact_property_listing ADD COLUMN ward_name VARCHAR(120)")
 
-    # Đảm bảo tất cả property types đều tồn tại (bao gồm cả types mới thêm)
+    # Đảm bảo tất cả property types đều tồn tại
     for type_name in ('khac', 'phong_tro', 'mat_bang', 'kho_xuong'):
         cursor.execute(
             "INSERT INTO dim_property_type (type_name) VALUES (%s) ON CONFLICT (type_name) DO NOTHING",

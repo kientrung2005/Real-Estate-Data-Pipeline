@@ -7,7 +7,10 @@ from src.crawl.bds_crawler import BDSCrawler
 from src.crawl.bds_transformer import build_bds_record
 from src.database.mongodb_repository import upsert_raw_listings_to_mongodb
 
-def crawl_bds_to_mongodb(pages: int = 3, fetch_detail: bool = True, headless: bool = True, user_data_dir: str = None) -> int:
+# Import cấu hình
+from config.settings import MONGO_COLLECTION_BDS, DEFAULT_PAGES_LOCAL
+
+def crawl_bds_to_mongodb(pages: int = DEFAULT_PAGES_LOCAL, fetch_detail: bool = True, headless: bool = True, user_data_dir: str = None) -> int:
     """Cào danh sách từ batdongsan.com.vn và upsert vào MongoDB."""
     print(f"Bắt đầu crawl Batdongsan.com.vn ({pages} trang)...", flush=True)
     
@@ -54,7 +57,8 @@ def crawl_bds_to_mongodb(pages: int = 3, fetch_detail: bool = True, headless: bo
                 continue
                 
             final_df = pd.DataFrame(records)
-            page_saved = upsert_raw_listings_to_mongodb(final_df)
+            # Sử dụng MONGO_COLLECTION_BDS từ config
+            page_saved = upsert_raw_listings_to_mongodb(final_df, collection_name=MONGO_COLLECTION_BDS)
             total_saved += page_saved
             print(f"[Mongo] Trang {page}/{pages}: Ghi {page_saved} bản ghi vào MongoDB. Lũy kế: {total_saved}", flush=True)
             
@@ -67,5 +71,3 @@ def crawl_bds_to_mongodb(pages: int = 3, fetch_detail: bool = True, headless: bo
         
     print(f"Hoàn tất crawl batdongsan.com.vn. Đã ghi {total_saved} tin.", flush=True)
     return total_saved
-
-
