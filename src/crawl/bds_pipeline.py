@@ -7,7 +7,7 @@ from src.crawl.bds_crawler import BDSCrawler
 from src.crawl.bds_transformer import build_bds_record
 from src.database.mongodb_repository import upsert_raw_listings_to_mongodb
 
-def crawl_bds_to_mongodb(pages: int = 1, fetch_detail: bool = True, headless: bool = True, user_data_dir: str = None) -> int:
+def crawl_bds_to_mongodb(pages: int = 3, fetch_detail: bool = True, headless: bool = True, user_data_dir: str = None) -> int:
     """Cào danh sách từ batdongsan.com.vn và upsert vào MongoDB."""
     print(f"Bắt đầu crawl Batdongsan.com.vn ({pages} trang)...", flush=True)
     
