@@ -11,6 +11,8 @@ from config.settings import MONGO_COLLECTION_CHOTOT
 def crawl_chotot_to_mongodb(pages: int = 1) -> int:
     """Pipeline lấy dữ liệu Chợ Tốt và lưu vào MongoDB."""
     total_saved = 0
+    seen_ids = set()
+    
     for page in range(1, pages + 1):
         print(f"[Listing] Đang cào trang {page}/{pages}...", flush=True)
         df_list = get_listing_ids(page=page)
@@ -20,7 +22,11 @@ def crawl_chotot_to_mongodb(pages: int = 1) -> int:
         records: List[Dict] = []
         for _, row in df_list.iterrows():
             list_id = row.get("list_id")
-            detail_payload = get_property_payload(str(list_id)) if list_id else None
+            if not list_id or str(list_id) in seen_ids:
+                continue
+            
+            seen_ids.add(str(list_id))
+            detail_payload = get_property_payload(str(list_id))
             
             if detail_payload:
                 # Dùng dữ liệu chi tiết

@@ -35,6 +35,22 @@ class BDSCrawler:
         # Tự động bật Fast Mode nếu không chạy trong Docker/Airflow
         self.is_airflow = os.path.exists("/opt/airflow")
         self.fast_mode = not self.is_airflow
+        self._xvfb_proc = None
+        
+        # Trên Airflow: dùng Xvfb (màn hình ảo) để chạy trình duyệt "có giao diện"
+        if self.is_airflow:
+            import subprocess
+            try:
+                self._xvfb_proc = subprocess.Popen(
+                    ["Xvfb", ":99", "-screen", "0", "1920x1080x24", "-nolisten", "tcp"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                os.environ["DISPLAY"] = ":99"
+                headless = False  # Chạy headed trên màn hình ảo
+                time.sleep(1)
+                print("[XVFB] Man hinh ao da khoi tao.", flush=True)
+            except Exception as e:
+                print(f"[XVFB] Loi: {e}", flush=True)
         
         self.playwright = sync_playwright().start()
         
@@ -44,6 +60,15 @@ class BDSCrawler:
             user_data_dir = os.path.join(base_dir, BROWSER_PROFILE_NAME)
         elif not os.path.isabs(user_data_dir):
             user_data_dir = os.path.join(base_dir, user_data_dir)
+            
+        # Dọn dẹp profile cũ để tránh bị Cloudflare "nhớ mặt"
+        if self.is_airflow and os.path.exists(user_data_dir):
+            import shutil
+            try:
+                shutil.rmtree(user_data_dir, ignore_errors=True)
+                time.sleep(1)
+                print(f"[DEBUG] Da lam moi browser profile: {user_data_dir}", flush=True)
+            except Exception: pass
         
         # Khởi tạo Chromium với Stealth mode
         self.context = self.playwright.chromium.launch_persistent_context(
@@ -51,13 +76,15 @@ class BDSCrawler:
             headless=headless,
             viewport={'width': 1920, 'height': 1080},
             ignore_https_errors=True,
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-infobars",
                 "--disable-notifications",
+                "--disable-gpu",
+                "--disable-dev-shm-usage",
             ]
         )
         
@@ -68,32 +95,47 @@ class BDSCrawler:
         print(f"BDSCrawler initialized ({mode_str}, headless={headless})", flush=True)
         Stealth().apply_stealth_sync(self.page)
 
-    def _handle_cloudflare(self):
-        """Săn và click Cloudflare Turnstile nếu xuất hiện."""
-        content = self.page.content()
-        if "cloudflare" not in content.lower() and "challenge" not in content.lower() and "verify you are human" not in content.lower():
-            return False
+    def _simulate_human(self):
+        """Giả lập hành vi người dùng thật."""
+        try:
+            for _ in range(random.randint(1, 2)):
+                self.page.mouse.wheel(0, random.randint(200, 500))
+                time.sleep(random.uniform(0.5, 1.0))
+            self.page.mouse.move(random.randint(100, 500), random.randint(100, 500), steps=5)
+        except Exception: pass
 
-        # Trong Fast Mode chỉ thử 3 lần để tiết kiệm thời gian
-        retries = 3 if self.fast_mode else 10
-        print(f"[SHADOW] Phat hien Cloudflare, dang xu ly...", flush=True)
-        
-        for i in range(retries): 
-            try:
-                for frame in self.page.frames:
-                    if "cloudflare" in frame.url or "challenge" in frame.url or "turnstile" in frame.url:
-                        for selector in ['#challenge-stage', 'input[type="checkbox"]', '.ctp-checkbox-label']:
-                            target = frame.locator(selector)
-                            if target.count() > 0:
-                                target.click()
-                                time.sleep(2 if self.fast_mode else 5)
-                                return True
-                
-                if not self.fast_mode and i == 5:
-                    self.page.mouse.click(300, 310) 
-                    time.sleep(3)
-            except Exception: pass
-            time.sleep(1 if self.fast_mode else 2)
+    def _handle_cloudflare(self):
+        """Săn và click Cloudflare Turnstile bằng tọa độ chuẩn."""
+        try:
+            # Kiểm tra trạng thái đang xác thực (Verifying)
+            is_verifying = "verifying" in self.page.content().lower()
+            if not is_verifying:
+                for f in self.page.frames:
+                    if "verifying" in f.url or "verifying" in (f.content().lower() if f else ""):
+                        is_verifying = True; break
+            
+            if is_verifying:
+                print(f"[SHADOW] Dang xac thuc... dang gia lap nguoi dung.", flush=True)
+                self._simulate_human()
+                time.sleep(5)
+                return True
+
+            # Kiểm tra xem có Challenge không
+            has_challenge = self.page.locator("iframe[src*='challenges.cloudflare.com']").count() > 0
+            if not has_challenge: return False
+
+            print(f"[SHADOW] Phat hien Cloudflare, dang click toa do...", flush=True)
+            for frame in self.page.frames:
+                if "challenges.cloudflare.com" in frame.url or "turnstile" in frame.url:
+                    # Click tọa độ chuẩn (30, 32) bên trong iframe
+                    target = frame.locator("body")
+                    target.hover(position={'x': 30, 'y': 32})
+                    time.sleep(0.5)
+                    target.click(position={'x': 30, 'y': 32}, force=True)
+                    print(f"[SHADOW] Da bam vao nut xac minh. Cho 15s...", flush=True)
+                    time.sleep(15)
+                    return True
+        except Exception: pass
         return False
 
     def get_listing_urls(self, page_num: int = 1) -> Optional[pd.DataFrame]:
@@ -102,22 +144,27 @@ class BDSCrawler:
             print(f"[Listing] Dang truy cap: {url}", flush=True)
             self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
             
+            # Thử giải quyết Cloudflare
             self._handle_cloudflare()
             
-            try:
-                self.page.wait_for_selector(BDS_SELECTORS["CARD"], timeout=10000 if self.fast_mode else 20000)
-            except Exception:
-                log_dir = LOG_DIR_AIRFLOW if self.is_airflow else LOG_DIR_LOCAL
-                if not os.path.exists(log_dir): os.makedirs(log_dir, exist_ok=True)
-                path = os.path.join(log_dir, f"error_list_{int(time.time())}.png")
-                self.page.screenshot(path=path)
-                print(f"[DEBUG] Khong thay tin rao. Anh loi: {path}", flush=True)
-                raise
+            # Vòng lặp chờ dữ liệu (tối đa 10 phút)
+            max_wait = 600
+            elapsed = 0
+            while elapsed < max_wait:
+                try:
+                    self.page.wait_for_selector(BDS_SELECTORS["CARD"], timeout=10000)
+                    break
+                except Exception:
+                    self._handle_cloudflare()
+                    elapsed += 15
+                    print(f"[SHADOW] Dang cho Cloudflare... ({elapsed}s/{max_wait}s)", flush=True)
+                    if elapsed % 30 == 0:
+                        log_dir = LOG_DIR_AIRFLOW if self.is_airflow else LOG_DIR_LOCAL
+                        self.page.screenshot(path=os.path.join(log_dir, f"wait_{elapsed}.png"))
             
             listings = self.page.query_selector_all(BDS_SELECTORS["CARD"])
             data = []
             for item in listings:
-                # Selector phụ cho link và ad_id
                 link_el = item.query_selector("a.js__product-link-for-product-id")
                 href = link_el.get_attribute("href") if link_el else ""
                 full_link = f"https://batdongsan.com.vn{href}" if href and href.startswith("/") else href
@@ -144,7 +191,6 @@ class BDSCrawler:
 
     def get_property_detail(self, url: str) -> Optional[Dict]:
         if not url: return None
-        # FAST MODE thì nghỉ ít thôi
         wait_range = SLEEP_FAST_MODE if self.fast_mode else SLEEP_SAFE_MODE
         time.sleep(random.uniform(*wait_range))
         
@@ -153,7 +199,7 @@ class BDSCrawler:
             self._handle_cloudflare()
             
             try:
-                self.page.wait_for_selector(BDS_SELECTORS["DESCRIPTION"], timeout=10000 if self.fast_mode else 20000)
+                self.page.wait_for_selector(BDS_SELECTORS["DESCRIPTION"], timeout=15000)
             except Exception: return None
             
             desc_el = self.page.query_selector(BDS_SELECTORS["DESCRIPTION"])
@@ -166,7 +212,7 @@ class BDSCrawler:
                 phone_btn = self.page.query_selector(BDS_SELECTORS["PHONE_BTN"])
                 if phone_btn:
                     phone_btn.click(force=True)
-                    time.sleep(0.5 if self.fast_mode else 1.5)
+                    time.sleep(1.5)
                 body_text = self.page.locator("body").inner_text()
                 clean_body = body_text.replace(" ", "").replace(".", "").replace("-", "")
                 matched = re.findall(r'(0[35789][0-9]{8})', clean_body)
@@ -186,6 +232,9 @@ class BDSCrawler:
     def close(self):
         if hasattr(self, 'context'): self.context.close()
         if hasattr(self, 'playwright'): self.playwright.stop()
+        if hasattr(self, '_xvfb_proc') and self._xvfb_proc:
+            self._xvfb_proc.terminate()
+            print("[XVFB] Da tat man hinh ao.", flush=True)
 
 def crawl_bds_to_mongodb(pages: int = DEFAULT_PAGES_LOCAL, headless: bool = DEFAULT_HEADLESS, user_data_dir: str = None) -> int:
     from src.crawl.bds_pipeline import crawl_bds_to_mongodb as run_pipeline
