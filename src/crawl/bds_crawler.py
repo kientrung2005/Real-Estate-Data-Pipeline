@@ -32,12 +32,11 @@ class BDSCrawler:
 
     def __init__(self, headless: bool = DEFAULT_HEADLESS, user_data_dir: Optional[str] = None) -> None:
         self.headless = headless
-        # Tự động bật Fast Mode nếu không chạy trong Docker/Airflow
         self.is_airflow = os.path.exists("/opt/airflow")
         self.fast_mode = not self.is_airflow
         self._xvfb_proc = None
         
-        # Trên Airflow: dùng Xvfb (màn hình ảo) để chạy trình duyệt "có giao diện"
+        # 1. Khởi tạo Xvfb nếu chạy trên Airflow (Linux)
         if self.is_airflow:
             import subprocess
             try:
@@ -46,7 +45,7 @@ class BDSCrawler:
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
                 os.environ["DISPLAY"] = ":99"
-                headless = False  # Chạy headed trên màn hình ảo
+                headless = False 
                 time.sleep(1)
                 print("[XVFB] Man hinh ao da khoi tao.", flush=True)
             except Exception as e:
@@ -54,15 +53,13 @@ class BDSCrawler:
         
         self.playwright = sync_playwright().start()
         
-        # Thư mục lưu dữ liệu trình duyệt
+        # 2. Thiết lập đường dẫn Profile
         base_dir = "/opt/airflow" if self.is_airflow else os.getcwd()
         if not user_data_dir:
             user_data_dir = os.path.join(base_dir, BROWSER_PROFILE_NAME)
-        elif not os.path.isabs(user_data_dir):
-            user_data_dir = os.path.join(base_dir, user_data_dir)
-            
-        # Dọn dẹp profile cũ để tránh bị Cloudflare "nhớ mặt"
-        if self.is_airflow and os.path.exists(user_data_dir):
+        
+        # 3. Dọn dẹp profile cũ (Rất quan trọng để tránh lỗi TargetClosedError)
+        if os.path.exists(user_data_dir):
             import shutil
             try:
                 shutil.rmtree(user_data_dir, ignore_errors=True)
@@ -70,23 +67,29 @@ class BDSCrawler:
                 print(f"[DEBUG] Da lam moi browser profile: {user_data_dir}", flush=True)
             except Exception: pass
         
-        # Khởi tạo Chromium với Stealth mode
+        # 4. Cấu hình User Agent và Args theo Hệ điều hành
+        if self.is_airflow:
+            user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            extra_args = ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+        else:
+            user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            extra_args = [] # Windows không cần các cờ sandbox của Linux
+
+        # 5. Khởi tạo Chromium
         self.context = self.playwright.chromium.launch_persistent_context(
             user_data_dir,
             headless=headless,
             viewport={'width': 1920, 'height': 1080},
             ignore_https_errors=True,
-            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            user_agent=user_agent,
             args=[
                 "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
                 "--disable-infobars",
                 "--disable-notifications",
                 "--disable-gpu",
-                "--disable-dev-shm-usage",
-            ]
+            ] + extra_args
         )
+
         
         self.page = self.context.pages[0] if self.context.pages else self.context.new_page()
         self.page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => false})")
